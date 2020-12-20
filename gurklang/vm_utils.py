@@ -1,4 +1,5 @@
-from .types import Value
+from .types import Scope, Stack, Value
+from typing import Any, Iterator
 
 
 def stringify_value(v: Value):
@@ -16,19 +17,6 @@ def stringify_value(v: Value):
         return f"<builtin {v.fn.__name__}>"
     else:
         raise RuntimeError(v)
-
-
-from immutables import Map
-from typing import Any, Callable, Iterator, NoReturn, Optional, TypeVar
-from gurklang.types import (
-    Scope, Stack,
-
-    Put, Call,
-
-    Value,
-    Atom, Int, Str, Code, NativeFunction,
-)
-
 
 
 def unwrap_stack(stack: Stack) -> Iterator[Value]:
