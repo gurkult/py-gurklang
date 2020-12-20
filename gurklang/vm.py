@@ -62,11 +62,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> tuple[Stack
         raise RuntimeError(instruction)
 
 
-def make_builtins(scope_id: int):
-    return Scope(parent=None, id=scope_id, values=builtin_values.module_map)
-
-
-builtin_scope = make_builtins(generate_scope_id())
+builtin_scope = builtin_values.module.make_scope(generate_scope_id())
 global_scope = make_scope(parent=builtin_scope)
 
 
