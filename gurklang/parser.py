@@ -18,16 +18,19 @@ tokenizer = build_tokenizer(
         ("RPAR", r"\)"),
         ("LBR", r"\{"),
         ("RBR", r"\}"),
-        ("INT", r"[-+]?(?:0|[1-9]\d*)"),
+        ("INT", r"[+-]\d+"),
         ("STR_D", r'"(?:\\.|[^"])+"'),
         ("STR_S", r"'(?:\\.|[^'])+'"),
-        ("ATOM", r"\:(?!\d)[^\"'(){}#: \n\t]+"),
-        ("NAME", r"(?!\d)[^\"'(){}#: \n\t]+"),
+        ("ATOM", r"\:[^\"'(){}# \n\t]+"),
+        ("NAME", r"[^\"'(){}# \n\t]+"),
     ),
     ignored_tokens=(
         ("COMMENT", r"\#.*($|\n)"),
         ("WHITESPACE", r"\s+"),
     ),
+    middleware={
+        "NAME": lambda s: ("INT", s) if s.isascii() and s.isdigit() else ("NAME", s)
+    }
 )
 
 

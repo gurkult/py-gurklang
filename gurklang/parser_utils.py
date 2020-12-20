@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 from dataclasses import dataclass
-from typing import Collection, Generic, Iterable, Iterator, Pattern, TypeVar
+from typing import Callable, Collection, Generic, Iterable, Iterator, Optional, Pattern, TypeVar
 
 
 TokenName = TypeVar("TokenName", bound=str)
@@ -23,6 +23,7 @@ class Tokenizer(Generic[TokenName]):
     """
     pattern: Pattern[str]
     ignore: Collection[str] = ()
+    middleware: Callable[[TokenName, str], tuple[TokenName, str]] = lambda name, v: (name, v)
 
     @property
     def token_type(self) -> type[Token[TokenName]]:
@@ -34,6 +35,7 @@ class Tokenizer(Generic[TokenName]):
                 (name, value) for (name, value) in match.groupdict().items()
                 if value is not None
             )
+            name, value = self.middleware(name, value)
             if name not in self.ignore:
                 yield Token(name, value, match.start())  # type: ignore
 
@@ -46,13 +48,24 @@ def build_regexp(lookup: Iterable[tuple[str, str]], flags: re.RegexFlag = re.Reg
     return re.compile(build_regexp_source(lookup), flags)
 
 
+def _make_middleware(lookup: dict[TokenName, Callable[[str], tuple[TokenName, str]]]):
+    def middleware(name: TokenName, value: str):
+        if name in lookup:
+            return lookup[name](value)
+        else:
+            return (name, value)
+    return middleware
+
+
 def build_tokenizer(
-    normal_tokens: tuple[tuple[TokenName, str], ...],
+    normal_tokens: tuple[tuple[TokenName, Optional[str]], ...],
     flags: re.RegexFlag = re.RegexFlag(0),
     *,
-    ignored_tokens: tuple[tuple[str, str], ...],
+    ignored_tokens: tuple[tuple[str, str], ...] = (),
+    middleware: dict[TokenName, Callable[[str], tuple[TokenName, str]]] = {},
 ) -> Tokenizer[TokenName]:
     return Tokenizer(
-        build_regexp(normal_tokens + ignored_tokens, flags),
-        ignore=[name for name, _pattern in ignored_tokens]
+        build_regexp(tuple(filter(None, normal_tokens)) + ignored_tokens, flags),
+        ignore=[name for name, _pattern in ignored_tokens],
+        middleware=_make_middleware(middleware)
     ) # type: ignore
