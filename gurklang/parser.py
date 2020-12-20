@@ -11,19 +11,19 @@ import ast
 import itertools
 
 
-TOKEN_RE = build_regexp({
-    "COMMENT": r"\#.*($|\n)",
-    "WHITESPACE": r"\s+",
-    "LPAR": r"\(",
-    "RPAR": r"\)",
-    "LBR": r"\{",
-    "RBR": r"\}",
-    "INT": r"[-+]?(?:0|[1-9]\d*)",
-    "STR_D": r'"(?:\\.|[^"])+"',
-    "STR_S": r"'(?:\\.|[^'])+'",
-    "ATOM": r"\:(?!\d)[^\"'(){}#: \n\t]+",
-    "NAME": r"(?!\d)[^\"'(){}#: \n\t]+",
-})
+TOKEN_RE = build_regexp((
+    ("COMMENT", r"\#.*($|\n)"),
+    ("WHITESPACE", r"\s+"),
+    ("LPAR", r"\("),
+    ("RPAR", r"\)"),
+    ("LBR", r"\{"),
+    ("RBR", r"\}"),
+    ("INT", r"[-+]?(?:0|[1-9]\d*)"),
+    ("STR_D", r'"(?:\\.|[^"])+"'),
+    ("STR_S", r"'(?:\\.|[^'])+'"),
+    ("ATOM", r"\:(?!\d)[^\"'(){}#: \n\t]+"),
+    ("NAME", r"(?!\d)[^\"'(){}#: \n\t]+"),
+))
 
 
 class Token(NamedTuple):
