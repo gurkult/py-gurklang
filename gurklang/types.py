@@ -60,8 +60,14 @@ class Call:
     function_name: str
     tag: ClassVar[Literal["call"]] = "call"
 
+@dataclass(frozen=True)
+class MakeVec:
+    # Collect `size` elements and make a vec
+    size: int
+    tag: ClassVar[Literal["make_vec"]] = "make_vec"
+
 # `Instruction` is a single step executed by the interpreter
-Instruction = Union[Put, PutCode, Call]
+Instruction = Union[Put, PutCode, Call, MakeVec]
 
 
 @dataclass
