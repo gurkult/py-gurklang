@@ -1,10 +1,10 @@
-from typing import Any, Iterator, List, Literal, NamedTuple, Union
+from typing import Iterator, Literal, NamedTuple
 from gurklang.types import (
     Instruction,
     Put, PutCode, Call,
 
     Value,
-    Atom, Str, Int, Vec, Code, NativeFunction
+    Atom, Str, Int, Vec
 )
 import ast
 import itertools
@@ -17,7 +17,7 @@ TOKEN_RE = re.compile(r"""
 | (?P<RPAR>    \)                        )
 | (?P<LBR>     \{                        )
 | (?P<RBR>     \}                        )
-| (?P<INT>     [-+]?(?:0|[1-9]\d*        )
+| (?P<INT>     [-+]?(?:0|[1-9]\d*)       )
 | (?P<STR_D>   "(?:\\.|[^"])+"           )
 | (?P<STR_S>   '(?:\\.|[^'])+'           )
 | (?P<ATOM>    \:(?!\d)[^"'(){}#: \n\t]+ )

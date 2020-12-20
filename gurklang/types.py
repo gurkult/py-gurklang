@@ -1,7 +1,6 @@
 from __future__ import annotations
-import re
 from immutables import Map
-from typing import Any, Callable, ClassVar, Sequence, Union, Literal, Optional
+from typing import Callable, ClassVar, Sequence, Union, Literal, Optional
 from dataclasses import dataclass
 
 

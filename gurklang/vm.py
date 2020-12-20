@@ -1,6 +1,14 @@
 from immutables import Map
 from typing import Any, Callable, Iterator, NoReturn, Optional, TypeVar
-from gurklang.types import Atom, Call, Int, NativeFunction, Put, Scope, Stack, Str, Value, Instruction, Code
+from gurklang.types import (
+    Scope, Stack,
+
+    Instruction,
+    Put, Call,
+
+    Value,
+    Atom, Int, Str, Code, NativeFunction,
+)
 
 
 _SCOPE_ID = 0
