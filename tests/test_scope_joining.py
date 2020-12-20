@@ -1,6 +1,5 @@
 from gurklang.types import Scope
 from immutables import Map
-from gurklang.vm import join_scopes
 
 
 def test_joining_None_and_closure_returns_closure():
