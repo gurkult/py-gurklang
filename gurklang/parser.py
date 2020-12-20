@@ -1,4 +1,5 @@
 from typing import Iterator, Literal, NamedTuple
+from gurklang.parser_utils import build_regexp
 from gurklang.types import (
     Instruction,
     Put, PutCode, Call,
@@ -8,21 +9,21 @@ from gurklang.types import (
 )
 import ast
 import itertools
-import re
 
 
-TOKEN_RE = re.compile(r"""
-  (?P<COMMENT> \#.*$                     )
-| (?P<LPAR>    \(                        )
-| (?P<RPAR>    \)                        )
-| (?P<LBR>     \{                        )
-| (?P<RBR>     \}                        )
-| (?P<INT>     [-+]?(?:0|[1-9]\d*)       )
-| (?P<STR_D>   "(?:\\.|[^"])+"           )
-| (?P<STR_S>   '(?:\\.|[^'])+'           )
-| (?P<ATOM>    \:(?!\d)[^"'(){}#: \n\t]+ )
-| (?P<NAME>    (?!\d)[^"'(){}#: \n\t]+   )
-""", re.M | re.X)
+TOKEN_RE = build_regexp({
+    "COMMENT": r"\#.*($|\n)",
+    "WHITESPACE": r"\s+",
+    "LPAR": r"\(",
+    "RPAR": r"\)",
+    "LBR": r"\{",
+    "RBR": r"\}",
+    "INT": r"[-+]?(?:0|[1-9]\d*)",
+    "STR_D": r'"(?:\\.|[^"])+"',
+    "STR_S": r"'(?:\\.|[^'])+'",
+    "ATOM": r"\:(?!\d)[^\"'(){}#: \n\t]+",
+    "NAME": r"(?!\d)[^\"'(){}#: \n\t]+",
+})
 
 
 class Token(NamedTuple):
@@ -37,7 +38,7 @@ def _lex(source: str) -> Iterator[Token]:
             (name, value) for (name, value) in m.groupdict().items()
             if value is not None
         )
-        if name != "COMMENT":
+        if name != "COMMENT" and name != "WHITESPACE":
             yield Token(name, value, m.start())  # type: ignore
 
 
