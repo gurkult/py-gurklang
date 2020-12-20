@@ -12,16 +12,16 @@ import re
 
 
 TOKEN_RE = re.compile(r"""
-  (?P<COMMENT> \#.*$                 )
-| (?P<LPAR>    \(                    )
-| (?P<RPAR>    \)                    )
-| (?P<LBR>     \{                    )
-| (?P<RBR>     \}                    )
-| (?P<INT>     \d+                   )
-| (?P<STR_D>   "(?:\\.|[^"])+"       )
-| (?P<STR_S>   '(?:\\.|[^'])+'       )
-| (?P<ATOM>    \:[-+*^=?!_a-zA-Z0-9]+)
-| (?P<NAME>    [-+*^=?!_a-zA-Z0-9]+  )
+  (?P<COMMENT> \#.*$                     )
+| (?P<LPAR>    \(                        )
+| (?P<RPAR>    \)                        )
+| (?P<LBR>     \{                        )
+| (?P<RBR>     \}                        )
+| (?P<INT>     \d+                       )
+| (?P<STR_D>   "(?:\\.|[^"])+"           )
+| (?P<STR_S>   '(?:\\.|[^'])+'           )
+| (?P<ATOM>    \:(?!\d)[^"'(){}#: \n\t]+ )
+| (?P<NAME>    (?!\d)[^"'(){}#: \n\t]+   )
 """, re.M | re.X)
 
 
