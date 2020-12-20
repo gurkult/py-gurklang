@@ -1,6 +1,6 @@
 from immutables import Map
 from typing import Any, Callable, Iterator, NoReturn, Optional, TypeVar
-from gurklang.types import Call, Int, NativeFunction, Put, Scope, Stack, Str, Value, Instruction, Code
+from gurklang.types import Atom, Call, Int, NativeFunction, Put, Scope, Stack, Str, Value, Instruction, Code
 
 
 _SCOPE_ID = 0
@@ -164,6 +164,16 @@ def make_builtins(scope_id: int):
     def exclamation_mark(stack: T[V, S], scope: Scope, fail: Fail):
         (function, rest) = stack
         return call(rest, scope, function)
+
+    @register("if")
+    def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
+        (condition, (else_, (then, rest))) = stack
+        if condition == Atom("true"):
+            return call(rest, scope, then)
+        elif condition == Atom("false"):
+            return call(rest, scope, else_)
+        else:
+            fail(f"{condition} is not a boolean (:true/:false)")
 
     builtins_dict["print"] = Code([Call("str"), Call("print_string")], closure=None)
 
