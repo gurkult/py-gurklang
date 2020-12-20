@@ -1,8 +1,10 @@
 from typing import Iterator, Literal, NamedTuple
 from gurklang.parser_utils import build_regexp, build_regexp_source, build_tokenizer
 from gurklang.types import (
+    Stack, Scope,
+
     Instruction,
-    Put, PutCode, Call,
+    Put, PutCode, Call, MakeVec,
 
     Value,
     Atom, Str, Int, Vec
@@ -41,25 +43,27 @@ def _lex(source: str) -> Iterator[Token]:
     return tokenizer.tokenize(source)
 
 
-def _parse_vec_inner(token_stream: Iterator[Token]) -> Iterator[Value]:
+def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
+    n = 0
     for token in token_stream:
         if token.name == "RPAR":
             break
 
         if token.name == "INT":
-            yield Int(int(token.value))
+            yield Put(Int(int(token.value)))
         elif token.name == "NAME":
-            yield Atom(token.value)
+            yield Put(Atom(token.value))
         elif token.name == "STR_D" or token.name == "STR_S":
-            yield Str(ast.literal_eval(token.value))
+            yield Put(Str(ast.literal_eval(token.value)))
+        elif token.name == "LBR":
+            yield PutCode(list(_parse_codeblock(token_stream)))
         else:
             raise ValueError(token)
+
+        n += 1
     else:
         raise ValueError(token)  # type: ignore
-
-
-def _parse_vec(token_stream: Iterator[Token]) -> Vec:
-    return Vec(list(_parse_vec_inner(token_stream)))
+    yield MakeVec(n)
 
 
 def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
@@ -73,7 +77,7 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield PutCode(list(_parse_codeblock(token_stream)))
 
         elif token.name == "LPAR":
-            yield Put(_parse_vec(token_stream))
+            yield from _parse_vec(token_stream)
 
         elif token.name == "INT":
             yield Put(Int(int(token.value)))
