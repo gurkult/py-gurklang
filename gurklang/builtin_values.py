@@ -1,5 +1,5 @@
 from immutables import Map
-from typing import Any, Callable, Iterator, NoReturn, Optional, TypeVar
+from typing import Any, Callable, Iterable, Iterator, NoReturn, Optional, TypeVar
 from . import vm
 from .vm_utils import stringify_value, repr_stack
 from . import stdlib_modules
@@ -97,6 +97,8 @@ def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
         fail(f"{condition} is not a boolean (:true/:false)")
 
 
+# <`import` implementation>
+
 def _make_name_getter(lookup: dict[str, Value]):
     def name_getter(stack: Stack, scope: Scope) -> tuple[Stack, Scope]:
         if stack is None:
@@ -112,6 +114,51 @@ def _make_name_getter(lookup: dict[str, Value]):
         function = lookup[name.value]
         return vm.call(rest, scope, function)
     return name_getter
+
+
+def _import_all(scope: Scope, module: Module):
+    return Scope(scope.parent, scope.id, scope.values.update(module.members))
+
+
+def _import_qualified(scope: Scope, module: Module, target_name: str):
+    name_getter = _make_name_getter(module.members)
+    return scope.with_member(target_name, NativeFunction(name_getter))
+
+
+def _import_prefixed(scope: Scope, module: Module, prefix: str):
+    imports = {f"{prefix}.{k}": v for k, v in module.members.items()}
+    return Scope(scope.parent, scope.id, scope.values.update(imports))
+
+
+def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
+    imports = {name: module.members[name] for name in names}
+    return Scope(scope.parent, scope.id, scope.values.update(imports))
+
+
+def _import_impl(scope: Scope, module: Module, import_options: Value):
+    if import_options == Atom("all"):
+        return _import_all(scope, module)
+
+    elif import_options == Atom("qual"):
+        return _import_qualified(scope, module, module.name)
+
+    elif import_options == Atom("prefix"):
+        return _import_prefixed(scope, module, module.name)
+
+    elif import_options.tag == "atom" and import_options.value.startswith("as:"):
+        new_name = import_options.value[len("as:"):]
+        return _import_qualified(scope, module, new_name)
+
+    elif import_options.tag == "atom" and import_options.value.startswith("prefix:"):
+        prefix = import_options.value[len("prefix:"):]
+        return _import_prefixed(scope, module, prefix)
+
+    elif import_options.tag == "vec" and all(x.tag == "atom" for x in import_options.values):
+        names: list[str] = [x.value for x in import_options.values]
+        return _import_cherrypick(scope, module, names)
+
+    else:
+        return None
 
 
 @module.register("import")
@@ -130,39 +177,19 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     if module is None:
         fail(f"module {module_name} not found")
 
-    ###
+    new_scope = _import_impl(scope, module, import_options)
 
-    if import_options == Atom("all"):
-        return rest, Scope(scope.parent, scope.id, scope.values.update())
+    if new_scope is None:
+        fail(f"invalid import options: {import_options}")
 
-    elif import_options == Atom("qual"):
-        name_getter = _make_name_getter(module.members)
-        return rest, scope.with_member(module_name, NativeFunction(name_getter))
-
-    elif import_options == Atom("prefix"):
-        imports = {f"{module_name}.{k}": v for k, v in module.members.items()}
-        return rest, Scope(scope.parent, scope.id, scope.values.update(imports))
-
-    elif import_options.tag == "atom" and import_options.value.startswith("as:"):
-        new_name = import_options.value[len("as:"):]
-        name_getter = _make_name_getter(module.members)
-        return rest, scope.with_member(new_name, NativeFunction(name_getter))
-
-    elif import_options.tag == "atom" and import_options.value.startswith("prefix:"):
-        prefix = import_options.value[len("prefix:"):]
-        imports = {f"{prefix}.{k}": v for k, v in module.members.items()}
-        return rest, Scope(scope.parent, scope.id, scope.values.update(imports))
-
-    elif import_options.tag == "vec" and all(x.tag == "atom" for x in import_options.values):
-        names: list[str] = [x.value for x in import_options.values]
-        imports = {name: module.members[name] for name in names}
-        return rest, Scope(scope.parent, scope.id, scope.values.update(imports))
-
-    else:
-        fail(f"Invalid import options: {import_options}")
+    return rest, new_scope
 
 
 
+
+
+
+# </`import` implementation>
 
 
 module.add("print", Code([Call("str"), Call("print_string")], closure=None))
