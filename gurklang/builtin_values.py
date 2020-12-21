@@ -89,6 +89,20 @@ def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
         fail(f"{condition} is not a boolean (:true/:false)")
 
 
+@module.register()
+def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (function, (value, rest)) = stack
+
+    if function.tag == "code":
+        rv = Code([Put(value), *function.instructions], function.closure)
+    elif function.tag == "native":
+        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc))  # type: ignore
+    else:
+        fail(f"{function} is not a function")
+
+    return (rv, rest), scope
+
+
 # <`import` implementation>
 
 def _make_name_getter(lookup: dict[str, Value]):

@@ -60,7 +60,18 @@ source5 = r"""
 """
 
 
-stack, scope = vm.run(parse(source5))
+source6 = R"""
+:math ( + ) import
+
+{ { + } close } :make-adder jar
+
+5 make-adder :add5 jar
+
+37 add5 print  #=> 42
+40 add5 print  #=> 45
+"""
+
+stack, scope = vm.run(parse(source6))
 
 print("\n----------------")
 print("Resulting stack:")
