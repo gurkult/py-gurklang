@@ -47,7 +47,7 @@ def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield Put(Atom(token.value))
         elif token.name == "ATOM":
             yield Put(Atom(":" + token.value))
-        elif token.name == "STR_D" or token.name == "STR_S":
+        elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
         elif token.name == "LBR":
             yield PutCode(list(_parse_codeblock(token_stream)))
@@ -82,7 +82,7 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
         elif token.name == "ATOM":
             yield Put(Atom(token.value[1:]))
 
-        elif token.name == "STR_D" or token.name == "STR_S":
+        elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
