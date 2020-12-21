@@ -39,7 +39,7 @@ class Module:
         # Z is contravariant because a function should accept a subset of
         # stacks (e.g. only stacks with at least 2 elements)
         def inner(fn: Callable[[Z, Scope, Fail], tuple[Stack, Scope]]):
-            fn_name = name or fn.__name__
+            fn_name = name or fn.__name__.replace("_", "-")
             def new_fn(stack, scope):
                 local_fail: Fail = lambda reason: _fail(fn_name, reason, stack, scope)
                 try:
@@ -47,7 +47,7 @@ class Module:
                 except Exception as e:
                     local_fail(f"uncaught exception {type(e)}: {' '.join(e.args)}")
             new_fn.__qualname__ = "new_fn"
-            self.add(name or fn.__name__, NativeFunction(new_fn))
+            self.add(fn_name, NativeFunction(new_fn))
         return inner
 
     def make_scope(self, id: int, parent: Optional[Scope]=None):
