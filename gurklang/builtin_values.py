@@ -4,7 +4,7 @@ from typing import Iterable
 from . import vm
 from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import CodeFlags, Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction
+from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Recur
 from .builtin_utils import Module, Fail
 
 
@@ -19,6 +19,12 @@ T, V, S = tuple, Value, Stack
 def dup(stack: T[V, S], scope: Scope, fail: Fail):
     (x, rest) = stack
     return (x, (x, rest)), scope
+
+
+@module.register()
+def drop(stack: T[V, S], scope: Scope, fail: Fail):
+    (x, rest) = stack
+    return rest, scope
 
 
 @module.register()
@@ -105,19 +111,22 @@ def str_(stack: T[V, S], scope: Scope, fail: Fail):
     return (representation, rest), scope
 
 
-@module.register("!")
-def exclamation_mark(stack: T[V, S], scope: Scope, fail: Fail):
-    (function, rest) = stack
-    return vm.call(rest, scope, function)
+# @module.register("!")
+# def exclamation_mark(stack: T[V, S], scope: Scope, fail: Fail):
+#     (function, rest) = stack
+#     if function.tag != "code" and function.tag != "native":
+#         fail(f"{function} is not a function")
+#     return Recur(rest, scope, function)
+module.add("!", Code([CallByValue()], closure=None, flags=CodeFlags.PARENT_SCOPE))
 
 
 @module.register("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
-    (condition, (else_, (then, rest))) = stack
+    (else_, (then, (condition, rest))) = stack
     if condition == Atom("true"):
-        return vm.call(rest, scope, then)
+        return (then, rest), scope
     elif condition == Atom("false"):
-        return vm.call(rest, scope, else_)
+        return (else_, rest), scope
     else:
         fail(f"{condition} is not a boolean (:true/:false)")
 
@@ -139,7 +148,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 # <`import` implementation>
 
 def _make_name_getter(lookup: dict[str, Value]):
-    def name_getter(stack: Stack, scope: Scope) -> tuple[Stack, Scope]:
+    def name_getter(stack: Stack, scope: Scope) -> Recur:
         if stack is None:
             raise RuntimeError("module getter on an empty stack")
         (name, rest) = stack
@@ -151,7 +160,7 @@ def _make_name_getter(lookup: dict[str, Value]):
             raise LookupError(f"member {name.value} not found")
 
         function = lookup[name.value]
-        return vm.call(rest, scope, function)
+        return Recur(rest, scope, function)  # type: ignore
     return name_getter
 
 
@@ -227,6 +236,5 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # </`import` implementation>
 
-
-module.add("print", Code([Call("str"), Call("print-string")], closure=None))
-module.add("println", Code([Call("str"), Call("println-string")], closure=None))
+module.add("print", Code([CallByName("str"), CallByName("print-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))
+module.add("println", Code([CallByName("str"), CallByName("println-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))

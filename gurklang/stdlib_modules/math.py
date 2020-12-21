@@ -2,12 +2,20 @@ import math
 
 from typing import TypeVar
 from ..builtin_utils import Module, Fail
-from ..types import Value, Stack, Scope, Int, Vec
+from ..types import Value, Stack, Scope, Int, Vec, Atom
 
 
 module = Module("math")
 T, V, S = tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
+
+
+@module.register("<")
+def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"{x} cannot be compared with {y}")
+    return ([Atom("false"), Atom("true")][x.value < y.value], rest), scope
 
 
 @module.register("+")
@@ -22,7 +30,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
-        fail(f"{y} cannot be subtracted from {y}")
+        fail(f"{y} cannot be subtracted from {x}")
     return (Int(x.value - y.value), rest), scope
 
 

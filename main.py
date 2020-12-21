@@ -78,17 +78,15 @@ source6 = R"""
 
 
 source7 = R"""
-:math ( + ) import
+:math ( + - < * ) import
 
-{
-  1 +
-  dup print
-  " " print
-  (1 1000) sleep
-  f
-} parent-scope :f jar
+{ dup 2 <
+  { drop 1 } parent-scope
+  { dup 1 - n! * } parent-scope
+  if !
+} parent-scope :n! jar
 
-0 f
+10000 n! println
 """
 
 

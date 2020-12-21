@@ -1,6 +1,6 @@
 from typing import Iterator
 from gurklang.parser_utils import build_tokenizer
-from gurklang.types import Instruction, Put, PutCode, Call, MakeVec, Atom, Str, Int
+from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
 import itertools
 
@@ -75,7 +75,7 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield Put(Int(int(token.value)))
 
         elif token.name == "NAME":
-            yield Call(token.value)
+            yield CallByName(token.value)
 
         elif token.name == "ATOM":
             yield Put(Atom(token.value[1:]))

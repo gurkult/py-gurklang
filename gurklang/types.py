@@ -5,19 +5,22 @@ from typing import Callable, ClassVar, Mapping, Sequence, Union, Literal, Option
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class Scope:
     parent: Optional[Scope]
     id: int
     values: Map
 
     def __getitem__(self, name: str) -> Value:
-        if name in self.values:
-            return self.values[name]
-        elif self.parent is not None:
-            return self.parent[name]
-        else:
-            raise KeyError(name)
+        scope = self
+        while scope is not None:
+            if name in scope.values:
+                return scope.values[name]
+            scope = scope.parent
+        raise KeyError(name)
+
+    def __repr__(self):
+        return f"Map(values={set(self.values.keys())}, id={self.id!r}, parent={self.parent!r})"
 
     def with_member(self, key: str, value: Value) -> Scope:
         return Scope(self.parent, self.id, self.values.set(key, value))
@@ -59,10 +62,15 @@ class PutCode:
     tag: ClassVar[Literal["put_code"]] = "put_code"
 
 @dataclass(frozen=True)
-class Call:
+class CallByName:
     # Call a function by name
     function_name: str
     tag: ClassVar[Literal["call"]] = "call"
+
+@dataclass(frozen=True)
+class CallByValue:
+    # Call a function by value
+    tag: ClassVar[Literal["call_by_value"]] = "call_by_value"
 
 @dataclass(frozen=True)
 class MakeVec:
@@ -80,7 +88,7 @@ class PopScope:
     tag: ClassVar[Literal["pop_scope"]] = "pop_scope"
 
 # `Instruction` is a single step executed by the interpreter
-Instruction = Union[Put, PutCode, Call, MakeVec, MakeScope, PopScope]
+Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope]
 
 
 class CodeFlags(IntFlag):
@@ -123,7 +131,14 @@ class Code:
 @dataclass
 class NativeFunction:
     # A function implemented in Python, like `if` or `vec`
-    fn: Callable[[Stack, Scope], tuple[Stack, Scope]]
+    fn: Callable[[Stack, Scope], Union[tuple[Stack, Scope], Recur]]
     tag: ClassVar[Literal["native"]] = "native"
 
 Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
+
+
+@dataclass
+class Recur:
+    stack: Stack
+    scope: Scope
+    function: Union[NativeFunction, Code]

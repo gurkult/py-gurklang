@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from gurklang.vm_utils import stringify_value, unwrap_stack
 from immutables import Map
 from typing import Optional, Union
 from . import builtin_values
-from gurklang.types import CodeFlags, MakeScope, NativeFunction, PopScope, Scope, Stack, Instruction, Value, Code, Vec
+from gurklang.types import CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put, Scope, Stack, Instruction, Value, Code, Vec, Recur
 from collections import deque
 
 
@@ -18,73 +19,77 @@ def make_scope(parent: Optional[Scope]) -> Scope:
 
 
 def call(stack: Stack, scope: Scope, function: Value) -> tuple[Stack, Scope]:
-    if function.tag == "native":
-        return function.fn(stack, scope)
-
-    elif function.tag == "code":
+    if function.tag == "code" or function.tag == "native":
         instructions: "deque[Instruction]" = deque()
 
-        def load_function(function: Code):
-            if function.flags & CodeFlags.PARENT_SCOPE:
+        def load_function(function: Union[Code, NativeFunction]):
+            if function.tag == "native":
+                instructions.appendleft(CallByValue())
+                instructions.appendleft(Put(function))
+            elif function.flags & CodeFlags.PARENT_SCOPE:
                 instructions.extendleft(reversed(function.instructions))
             else:
                 instructions.appendleft(PopScope())
                 instructions.extendleft(reversed(function.instructions))
                 instructions.appendleft(MakeScope(parent=scope.join_closure_scope(function.closure)))
 
-
         load_function(function)
 
         while instructions:
             instruction = instructions.popleft()
-            # print("instruction", instruction)
             r = execute(stack, scope, instruction)
-            if isinstance(r, Done):
-                stack, scope = r.stack, r.scope
-            elif isinstance(r.function, NativeFunction):
-                stack, scope = r.function.fn(stack, scope)
+            if isinstance(r, tuple):
+                stack, scope = r
             else:
-                load_function(r.function)
-
+                stack, scope = r.stack, r.scope
+                if isinstance(r.function, NativeFunction):
+                    v = r.function.fn(stack, scope)
+                    if type(v) is Recur:
+                        stack, scope = v.stack, v.scope  # type: ignore
+                        instructions.appendleft(CallByValue())
+                        instructions.appendleft(Put(v.function))  # type: ignore
+                    else:
+                        stack, scope = v  # type: ignore
+                else:
+                    load_function(r.function)
         return stack, scope
     else:
         raise RuntimeError(function)
 
-@dataclass
-class Done:
-    stack: Stack
-    scope: Scope
 
-@dataclass
-class Recur:
-    function: Union[NativeFunction, Code]
-
-
-def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[Done, Recur]:
+def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[tuple[Stack, Scope], Recur]:
     if instruction.tag == "put":
-        return Done((instruction.value, stack), scope)
+        return (instruction.value, stack), scope
 
     elif instruction.tag == "put_code":
-        return Done((Code(instruction.value, scope), stack), scope)
+        return (Code(instruction.value, scope), stack), scope
 
     elif instruction.tag == "call":
         function = scope[instruction.function_name]
         if function.tag != "code" and function.tag != "native":
             raise RuntimeError(function)
-        return Recur(function)
+        return Recur(stack, scope, function)
+
+    elif instruction.tag == "call_by_value":
+        if stack is None:
+            raise RuntimeError("CallByValue on empty stack")
+        (function, rest) = stack
+        if function.tag != "code" and function.tag != "native":
+            raise RuntimeError(function)
+        return Recur(rest, scope, function)  # type: ignore
 
     elif instruction.tag == "make_vec":
         elements = []
         for _ in range(instruction.size):
             head, stack = stack  # type: ignore
             elements.append(head)
-        return Done((Vec(elements[::-1]), stack), scope)
+        return (Vec(elements[::-1]), stack), scope
 
     elif instruction.tag == "make_scope":
-        return Done(stack, make_scope(instruction.parent))
+        return stack, make_scope(instruction.parent)
 
     elif instruction.tag == "pop_scope":
-        return Done(stack, scope.parent)  # type: ignore
+        return stack, scope.parent  # type: ignore
 
     else:
         raise RuntimeError(instruction)
