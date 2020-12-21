@@ -1,14 +1,6 @@
-from typing import Iterator, Literal, NamedTuple
-from gurklang.parser_utils import build_regexp, build_regexp_source, build_tokenizer
-from gurklang.types import (
-    Stack, Scope,
-
-    Instruction,
-    Put, PutCode, Call, MakeVec,
-
-    Value,
-    Atom, Str, Int, Vec
-)
+from typing import Iterator
+from gurklang.parser_utils import build_tokenizer
+from gurklang.types import Instruction, Put, PutCode, Call, MakeVec, Atom, Str, Int
 import ast
 import itertools
 

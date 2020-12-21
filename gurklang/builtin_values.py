@@ -1,16 +1,8 @@
-from immutables import Map
-from typing import Any, Callable, Iterable, Iterator, NoReturn, Optional, TypeVar
+from typing import Iterable
 from . import vm
-from .vm_utils import stringify_value, repr_stack
+from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import (
-    Scope, Stack,
-
-    Put, Call,
-
-    Value,
-    Atom, Int, Str, Code, NativeFunction,
-)
+from gurklang.types import Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction
 from .builtin_utils import Module, Fail
 
 

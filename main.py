@@ -1,5 +1,6 @@
 import pprint
 import gurklang.vm as vm
+from gurklang.vm_utils import repr_stack
 from gurklang.parser import parse
 
 
@@ -63,4 +64,4 @@ stack, scope = vm.run(parse(source5))
 
 print("\n----------------")
 print("Resulting stack:")
-pprint.pprint(vm.repr_stack(stack))
+pprint.pprint(repr_stack(stack))
