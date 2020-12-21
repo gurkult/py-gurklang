@@ -62,8 +62,11 @@ source5 = r"""
 
 source6 = R"""
 :math ( + ) import
+:inspect ( code-dump ) import
 
-{ { + } close } :make-adder jar
+{ :f var :x var { x f ! } } :my-close jar
+
+{ { + } my-close } :make-adder jar
 
 5 make-adder :add5 jar
 
