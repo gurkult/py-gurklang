@@ -1,8 +1,10 @@
+import time
+import dataclasses
 from typing import Iterable
 from . import vm
 from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction
+from gurklang.types import CodeFlags, Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction
 from .builtin_utils import Module, Fail
 
 
@@ -57,12 +59,43 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 
 @module.register()
-def print_string(stack: T[V, S], scope: Scope, fail: Fail):
+def println_string(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     if head.tag != "str":
         fail(f"{head} is not a string")
     print(head.value)
     return rest, scope
+
+
+@module.register()
+def print_string(stack: T[V, S], scope: Scope, fail: Fail):
+    (head, rest) = stack
+    if head.tag != "str":
+        fail(f"{head} is not a string")
+    print(head.value, end="", flush=True)
+    return rest, scope
+
+
+@module.register()
+def sleep(stack: T[V, S], scope: Scope, fail: Fail):
+    (head, rest) = stack
+    if head.tag == "int":
+        sleep_time = head.value
+    elif head.tag == "vec" and len(head.values) == 2 and head.values[0].tag == "int" and head.values[1].tag == "int":
+        sleep_time: float = head.values[0].value / head.values[1].value
+    else:
+        fail(f"Invalid duration: {head}")
+    time.sleep(sleep_time)
+    return rest, scope
+
+
+@module.register()
+def parent_scope(stack: T[V, S], scope: Scope, fail: Fail):
+    (code, rest) = stack
+    if code.tag != "code":
+        fail(f"Expected code value, got: {code}")
+    new_code = dataclasses.replace(code, flags=code.flags | CodeFlags.PARENT_SCOPE)
+    return (new_code, rest), scope
 
 
 @module.register("str")
@@ -94,7 +127,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (function, (value, rest)) = stack
 
     if function.tag == "code":
-        rv = Code([Put(value), *function.instructions], function.closure)
+        rv = Code([Put(value), *function.instructions], closure=function.closure, flags=function.flags)
     elif function.tag == "native":
         rv = NativeFunction(lambda st, sc: function.fn((value, st), sc))  # type: ignore
     else:
@@ -195,4 +228,5 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 # </`import` implementation>
 
 
-module.add("print", Code([Call("str"), Call("print_string")], closure=None))
+module.add("print", Code([Call("str"), Call("print-string")], closure=None))
+module.add("println", Code([Call("str"), Call("println-string")], closure=None))

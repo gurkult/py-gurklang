@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import  IntFlag
 from immutables import Map
 from typing import Callable, ClassVar, Mapping, Sequence, Union, Literal, Optional
 from dataclasses import dataclass
@@ -69,8 +70,22 @@ class MakeVec:
     size: int
     tag: ClassVar[Literal["make_vec"]] = "make_vec"
 
+@dataclass(frozen=True)
+class MakeScope:
+    parent: Optional[Scope]
+    tag: ClassVar[Literal["make_scope"]] = "make_scope"
+
+@dataclass(frozen=True)
+class PopScope:
+    tag: ClassVar[Literal["pop_scope"]] = "pop_scope"
+
 # `Instruction` is a single step executed by the interpreter
-Instruction = Union[Put, PutCode, Call, MakeVec]
+Instruction = Union[Put, PutCode, Call, MakeVec, MakeScope, PopScope]
+
+
+class CodeFlags(IntFlag):
+    EMPTY = 0
+    PARENT_SCOPE = 1
 
 
 @dataclass
@@ -102,6 +117,7 @@ class Code:
     # Code (funciton), like { :b var :a var b a }
     instructions: Sequence[Instruction]
     closure: Optional[Scope]
+    flags: CodeFlags = CodeFlags.EMPTY
     tag: ClassVar[Literal["code"]] = "code"
 
 @dataclass

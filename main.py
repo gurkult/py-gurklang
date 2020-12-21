@@ -10,6 +10,8 @@ source1 = R"""
 """
 
 source2 = R"""
+:math ( + ) import
+
 { :x var { x + } } :make_adder jar
 5 make_adder :add5 jar
 
@@ -74,7 +76,23 @@ source6 = R"""
 40 add5 print  #=> 45
 """
 
-stack, scope = vm.run(parse(source6))
+
+source7 = R"""
+:math ( + ) import
+
+{
+  1 +
+  dup print
+  " " print
+  (1 1000) sleep
+  f
+} parent-scope :f jar
+
+0 f
+"""
+
+
+stack, scope = vm.run(parse(source7))
 
 print("\n----------------")
 print("Resulting stack:")
