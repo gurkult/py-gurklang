@@ -23,7 +23,15 @@ source3 = R"""
 {1} {2} :false if print
 """
 
-stack, scope = vm.run(parse(source3))
+source4 = R"""
+160 15 %make
+4 10 %make
+
+%+ print
+"""
+
+
+stack, scope = vm.run(parse(source4))
 
 print("\n----------------")
 print("Resulting stack:")
