@@ -2,7 +2,6 @@
 Utilities for creating built-in modules
 """
 
-
 from dataclasses import field, dataclass
 from immutables import Map
 from typing import Callable,  NoReturn, Optional, TypeVar
@@ -51,5 +50,5 @@ class Module:
             self.add(name or fn.__name__, NativeFunction(new_fn))
         return inner
 
-    def make_scope(self, id: int):
-        return Scope(parent=None, id=id, values=Map(self.members))
+    def make_scope(self, id: int, parent: Optional[Scope]=None):
+        return Scope(parent=parent, id=id, values=Map(self.members))

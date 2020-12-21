@@ -23,15 +23,43 @@ source3 = R"""
 {1} {2} :false if print
 """
 
-source4 = R"""
-160 15 %make
-4 10 %make
+source4 = r"""
+:math :qual import
 
-%+ print
+160 15 :%make math   # 160 15 %make      ~  (32 3)
+4 10 :%make math     # 4 10 %make        ~  (2 5)
+:%+ math print       # (23 3) (4 10) %+  ~  (166 15)
 """
 
 
-stack, scope = vm.run(parse(source4))
+source5 = r"""
+# 1. Only import certain names (from math import %make)
+:math (%make) import
+4 2 %make print
+
+# 2. Import all the names (from math import *)
+:math :all import
+4 2 %make print
+
+# 3. Qualified import (import math)
+:math :qual import
+4 2 :%make math print
+
+# 4. Renaming qualified import (import math as shmath)
+:math :as:shmath import
+4 2 :%make shmath print
+
+# 5. Prefixed import (from math import * as "math_*")
+:math :prefix import
+4 2 math.%make print
+
+# 6. Custom prefixed import (from math import * as "math_*")
+:math :prefix:shmath import
+4 2 shmath.%make print
+"""
+
+
+stack, scope = vm.run(parse(source5))
 
 print("\n----------------")
 print("Resulting stack:")
