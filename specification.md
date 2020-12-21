@@ -23,7 +23,7 @@ Possible word types:
 | Name | any sequence of non-whitespace characters other than `"'(){}#` not beginning with `:` and not forming an _integer_  | `foo`, `два-ℕ` |
 | Atom |  A colon `:` succeeded by a _name_ without whitespace | `:foo`, `:два-ℕ` |
 | Code value | A sequence of words enclosed in `{` and `}` | `{ :foo 5 build }` |
-| Tuple | A sequence of (possibly mixed) names, integers, strings, code values enclosed in `(` `)` | `(:rectangle 3 5)` |
+| Tuple | A sequence of (possibly mixed) names, integers, strings, code values enclosed in `(` `)` | `(rectangle 3 5)` |
 
 Example of a valid program:
 ```elixir
@@ -75,6 +75,35 @@ request to a web service, or launch nuclear missiles. And example would be the
 ```elixir
 "Hello, world!" print
 ```
+
+## Values explaned
+
+### Integer values
+
+An integer value is an arbitrarily large whole number.
+
+### String values
+
+A string value is a sequence of Unicode codepoints
+
+### Atom values
+
+An atom value is a unique identifier that can be stored and compared efficiently
+
+### Native function values
+
+A native function is a function implemented in the host language, not in terms
+of Gurklang itself.
+
+### Code values
+
+A code value is a user-defined function, combining a sequence of instrunctions
+and a closure. They're explained in more detail later.
+
+### Tuple values
+
+A tuple is an ordered collection of values.
+
 
 ## Code values
 
