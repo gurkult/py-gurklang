@@ -117,25 +117,22 @@ def _make_name_getter(lookup: dict[str, Value]):
 
 
 def _import_all(scope: Scope, module: Module):
-    return Scope(scope.parent, scope.id, scope.values.update(module.members))
+    return module.members
 
 
 def _import_qualified(scope: Scope, module: Module, target_name: str):
-    name_getter = _make_name_getter(module.members)
-    return scope.with_member(target_name, NativeFunction(name_getter))
+    return {target_name: NativeFunction(_make_name_getter(module.members))}
 
 
 def _import_prefixed(scope: Scope, module: Module, prefix: str):
-    imports = {f"{prefix}.{k}": v for k, v in module.members.items()}
-    return Scope(scope.parent, scope.id, scope.values.update(imports))
+    return {f"{prefix}.{k}": v for k, v in module.members.items()}
 
 
 def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
-    imports = {name: module.members[name] for name in names}
-    return Scope(scope.parent, scope.id, scope.values.update(imports))
+    return {name: module.members[name] for name in names}
 
 
-def _import_impl(scope: Scope, module: Module, import_options: Value):
+def _get_imported_members(scope: Scope, module: Module, import_options: Value):
     if import_options == Atom("all"):
         return _import_all(scope, module)
 
@@ -177,12 +174,12 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     if module is None:
         fail(f"module {module_name} not found")
 
-    new_scope = _import_impl(scope, module, import_options)
+    new_members = _get_imported_members(scope, module, import_options)
 
-    if new_scope is None:
+    if new_members is None:
         fail(f"invalid import options: {import_options}")
 
-    return rest, new_scope
+    return rest, scope.with_members(new_members)
 
 
 

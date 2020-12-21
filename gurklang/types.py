@@ -1,6 +1,6 @@
 from __future__ import annotations
 from immutables import Map
-from typing import Callable, ClassVar, Sequence, Union, Literal, Optional
+from typing import Callable, ClassVar, Mapping, Sequence, Union, Literal, Optional
 from dataclasses import dataclass
 
 
@@ -20,6 +20,9 @@ class Scope:
 
     def with_member(self, key: str, value: Value) -> Scope:
         return Scope(self.parent, self.id, self.values.set(key, value))
+
+    def with_members(self, update: Mapping[str, Value]):
+        return Scope(self.parent, self.id, self.values.update(update))
 
     def with_parent(self, parent: Optional[Scope]):
         return Scope(parent, self.id, self.values)
