@@ -66,7 +66,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[tuple
 
     elif instruction.tag == "call":
         function = scope[instruction.function_name]
-        if function.tag != "code" and function.tag != "native":
+        if function.tag not in ["code", "native"]:
             raise RuntimeError(function)
         return Recur(stack, scope, function)
 
@@ -74,7 +74,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[tuple
         if stack is None:
             raise RuntimeError("CallByValue on empty stack")
         (function, rest) = stack
-        if function.tag != "code" and function.tag != "native":
+        if function.tag not in ["code", "native"]:
             raise RuntimeError(function)
         return Recur(rest, scope, function)  # type: ignore
 
