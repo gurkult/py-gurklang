@@ -47,7 +47,7 @@ def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (code, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
-    if code.tag != "code" and code.tag != "native":
+    if code.tag not in ["code", "native"]:
         fail(f"{code} is not code")
     return rest, scope.with_member(identifier.value, code)
 
@@ -153,7 +153,7 @@ def _make_name_getter(lookup: dict[str, Value]):
             raise RuntimeError("module getter on an empty stack")
         (name, rest) = stack
 
-        if name.tag != "atom" and name.tag != "str":
+        if name.tag not in ["atom", "str"]:
             raise RuntimeError(f"member name has to be an atom or a string, got: {name}")
 
         if name.value not in lookup:

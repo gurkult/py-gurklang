@@ -37,9 +37,7 @@ class Scope:
         This is needed because scopes are immutable, and an outer scope
         might've been updated with new names or names being redefined.
         """
-        if closure_scope is None:
-            return self
-        elif self.id == closure_scope.id:
+        if closure_scope is None or self.id == closure_scope.id:
             return self
         else:
             return closure_scope.with_parent(self.join_closure_scope(closure_scope.parent))
