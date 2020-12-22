@@ -1,7 +1,10 @@
 from __future__ import annotations
 from enum import  IntFlag
 from immutables import Map
-from typing_extensions import Literal
+try:
+    from typing_extensions import Literal
+except ImportError:
+    from typing import Literal
 from typing import Callable, ClassVar, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass
 
