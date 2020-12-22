@@ -1,6 +1,6 @@
 from immutables import Map
 from typing import Optional, Union, Tuple
-from . import builtin_values
+from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
     Scope, Stack, Instruction, Code, Vec, Recur
@@ -108,7 +108,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[Tuple
         raise RuntimeError(instruction)
 
 
-builtin_scope = builtin_values.module.make_scope(generate_scope_id())
+builtin_scope = prelude.module.make_scope(generate_scope_id())
 global_scope = make_scope(parent=builtin_scope)
 
 
