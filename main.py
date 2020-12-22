@@ -106,7 +106,22 @@ source8 = R"""
 """
 
 
-stack, scope = vm.run(parse(source8))
+source9 = R"""
+:inspect :prefix import
+:math ( + - < * ) import
+
+{
+  dup 2 <
+  { drop 1 } parent-scope
+  { dup 1 - n! * } parent-scope
+  if !
+} parent-scope :n! jar
+
+:n! inspect.dis
+"""
+
+
+stack, scope = vm.run(parse(source9))
 
 print("\n----------------")
 print("Resulting stack:")
