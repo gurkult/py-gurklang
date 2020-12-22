@@ -28,10 +28,8 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
 
     if head.tag == "atom":
-        name = head.value
         head = scope[head.value]
-    else:
-        name = "<anon>"
+
     if head.tag != "code":
         fail(f"{head} is not valid code or atom")
 
