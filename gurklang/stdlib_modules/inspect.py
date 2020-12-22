@@ -1,14 +1,14 @@
 import pprint
 import math
 
-from typing import TypeVar
+from typing import TypeVar, Tuple
 from ..vm_utils import repr_scope
 from ..builtin_utils import Module, Fail
 from ..types import Atom, Value, Stack, Scope, Int, Vec
 
 
 module = Module("inspect")
-T, V, S = tuple, Value, Stack
+T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 

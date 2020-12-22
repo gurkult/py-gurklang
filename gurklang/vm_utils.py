@@ -1,5 +1,5 @@
 from .types import Scope, Stack, Value
-from typing import Any, Iterator
+from typing import Any, Iterator, List, Dict
 
 
 def stringify_value(v: Value):
@@ -25,11 +25,11 @@ def unwrap_stack(stack: Stack) -> Iterator[Value]:
         yield x
 
 
-def repr_stack(stack) -> list[Value]:
+def repr_stack(stack) -> List[Value]:
     return [*unwrap_stack(stack)][::-1]
 
 
-def repr_scope(scope: Scope) -> dict[str, Any]:
+def repr_scope(scope: Scope) -> Dict[str, Any]:
     d = dict(scope.values.items())
     if scope.parent is not None:
         d["(parent)"] = repr_scope(scope.parent)

@@ -1,7 +1,8 @@
 from __future__ import annotations
 from enum import  IntFlag
 from immutables import Map
-from typing import Callable, ClassVar, Mapping, Sequence, Union, Literal, Optional
+from typing_extensions import Literal
+from typing import Callable, ClassVar, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -44,7 +45,7 @@ class Scope:
 
 
 # The stack is immutable and is modelled as a linked list:
-Stack = Optional[tuple["Value", "Stack"]]
+Stack = Optional[Tuple["Value", "Stack"]]
 
 
 @dataclass(frozen=True)
@@ -129,7 +130,7 @@ class Code:
 @dataclass
 class NativeFunction:
     # A function implemented in Python, like `if` or `vec`
-    fn: Callable[[Stack, Scope], Union[tuple[Stack, Scope], Recur]]
+    fn: Callable[[Stack, Scope], Union[Tuple[Stack, Scope], Recur]]
     tag: ClassVar[Literal["native"]] = "native"
 
 Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]

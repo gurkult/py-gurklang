@@ -90,7 +90,23 @@ source7 = R"""
 """
 
 
-stack, scope = vm.run(parse(source7))
+source8 = R"""
+:math ( + - < * ) import
+
+{
+  dup 2 <
+    { }
+    { dup 1 - rot3 * swap n!-impl } parent-scope
+    if !
+} parent-scope :n!-impl jar
+
+{ 1 swap n!-impl drop } parent-scope :n! jar
+
+100000 n! drop
+"""
+
+
+stack, scope = vm.run(parse(source8))
 
 print("\n----------------")
 print("Resulting stack:")

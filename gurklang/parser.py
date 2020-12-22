@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, List
 from gurklang.parser_utils import build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
@@ -98,5 +98,5 @@ def _parse_stream(token_stream: Iterator[Token], length: int) -> Iterator[Instru
     ))
 
 
-def parse(source: str) -> list[Instruction]:
+def parse(source: str) -> List[Instruction]:
     return list(_parse_stream(_lex(source), len(source)))

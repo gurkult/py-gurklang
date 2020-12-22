@@ -1,7 +1,5 @@
-from dataclasses import dataclass
-from gurklang.vm_utils import stringify_value, unwrap_stack
 from immutables import Map
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 from . import builtin_values
 from gurklang.types import CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put, Scope, Stack, Instruction, Value, Code, Vec, Recur
 from collections import deque
@@ -18,7 +16,7 @@ def make_scope(parent: Optional[Scope]) -> Scope:
     return Scope(parent, generate_scope_id(), Map())
 
 
-def call(stack: Stack, scope: Scope, function: Value) -> tuple[Stack, Scope]:
+def call(stack: Stack, scope: Scope, function: Value) -> Tuple[Stack, Scope]:
     if function.tag == "code" or function.tag == "native":
         instructions: "deque[Instruction]" = deque()
 
@@ -57,7 +55,7 @@ def call(stack: Stack, scope: Scope, function: Value) -> tuple[Stack, Scope]:
         raise RuntimeError(function)
 
 
-def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[tuple[Stack, Scope], Recur]:
+def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[Tuple[Stack, Scope], Recur]:
     if instruction.tag == "put":
         return (instruction.value, stack), scope
 
@@ -68,7 +66,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[tuple
         function = scope[instruction.function_name]
         if function.tag not in ["code", "native"]:
             raise RuntimeError(function)
-        return Recur(stack, scope, function)
+        return Recur(stack, scope, function)  # type: ignore
 
     elif instruction.tag == "call_by_value":
         if stack is None:

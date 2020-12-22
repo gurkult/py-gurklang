@@ -1,12 +1,12 @@
 import math
 
-from typing import TypeVar
+from typing import TypeVar, Tuple
 from ..builtin_utils import Module, Fail
 from ..types import Value, Stack, Scope, Int, Vec, Atom
 
 
 module = Module("math")
-T, V, S = tuple, Value, Stack
+T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 
@@ -61,7 +61,7 @@ def make_fraction(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Vec([Int(numerator), Int(denominator)]), rest), scope
 
 
-def _read_fraction(stack: T[V, Z], fail: Fail) -> tuple[tuple[int, int], Z]:
+def _read_fraction(stack: T[V, Z], fail: Fail) -> Tuple[Tuple[int, int], Z]:
     (head, rest) = stack
 
     if head.tag == "int":

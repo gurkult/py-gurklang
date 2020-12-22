@@ -1,7 +1,6 @@
 import time
 import dataclasses
-from typing import Iterable
-from . import vm
+from typing import Iterable, Dict, List, Tuple
 from .vm_utils import stringify_value
 from . import stdlib_modules
 from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Recur
@@ -12,7 +11,7 @@ module = Module("builtins")
 
 
 # Shortcuts for brevity
-T, V, S = tuple, Value, Stack
+T, V, S = Tuple, Value, Stack
 
 
 @module.register()
@@ -147,7 +146,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # <`import` implementation>
 
-def _make_name_getter(lookup: dict[str, Value]):
+def _make_name_getter(lookup: Dict[str, Value]):
     def name_getter(stack: Stack, scope: Scope) -> Recur:
         if stack is None:
             raise RuntimeError("module getter on an empty stack")
@@ -199,7 +198,7 @@ def _get_imported_members(scope: Scope, module: Module, import_options: Value):
         return _import_prefixed(scope, module, prefix)
 
     elif import_options.tag == "vec" and all(x.tag == "atom" for x in import_options.values):
-        names: list[str] = [x.value for x in import_options.values]
+        names: List[str] = [x.value for x in import_options.values]
         return _import_cherrypick(scope, module, names)
 
     else:
