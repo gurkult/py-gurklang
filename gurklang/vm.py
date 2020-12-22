@@ -3,7 +3,7 @@ from typing import Optional, Union, Tuple
 from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
-    Scope, Stack, Instruction, Code, Vec, Recur
+    Scope, Stack, Instruction, Code, Vec
 )
 from collections import deque
 
@@ -44,28 +44,23 @@ def call(stack: Stack, scope: Scope, function: Union[Code, NativeFunction]) -> T
 
     while pipe:
         instruction = pipe.pop()
-        r = execute(stack, scope, instruction)
 
-        if isinstance(r, tuple):
-            stack, scope = r
-
-        else:
-            stack, scope = r.stack, r.scope
-            if isinstance(r.function, Code):
-                _load_function(scope, pipe, r.function)
+        if instruction.tag == "call":
+            pipe.append(CallByValue())
+            pipe.append(Put(scope[instruction.function_name]))
+        elif instruction.tag == "call_by_value":
+            (function, stack) = stack  # type: ignore
+            if function.tag == "code":
+                _load_function(scope, pipe, function)
             else:
-                v = r.function.fn(stack, scope)
-                if type(v) is Recur:
-                    stack, scope = v.stack, v.scope  # type: ignore
-                    pipe.append(CallByValue())
-                    pipe.append(Put(v.function))  # type: ignore
-                else:
-                    stack, scope = v  # type: ignore
+                stack, scope = function.fn(stack, scope)
+        else:
+            stack, scope = execute(stack, scope, instruction)
 
     return stack, scope
 
 
-def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[Tuple[Stack, Scope], Recur]:
+def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack, Scope]:
     """
     Execute an instruction and return new state of the system.
 
@@ -76,20 +71,6 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Union[Tuple
 
     elif instruction.tag == "put_code":
         return (Code(instruction.value, scope), stack), scope
-
-    elif instruction.tag == "call":
-        function = scope[instruction.function_name]
-        if function.tag not in ["code", "native"]:
-            raise RuntimeError(function)
-        return Recur(stack, scope, function)  # type: ignore
-
-    elif instruction.tag == "call_by_value":
-        if stack is None:
-            raise RuntimeError("CallByValue on empty stack")
-        (function, rest) = stack
-        if function.tag not in ["code", "native"]:
-            raise RuntimeError(function)
-        return Recur(rest, scope, function)  # type: ignore
 
     elif instruction.tag == "make_vec":
         elements = []

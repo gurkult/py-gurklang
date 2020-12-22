@@ -3,7 +3,7 @@ import dataclasses
 from typing import Iterable, Dict, List, Tuple
 from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Recur
+from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction
 from .builtin_utils import Module, Fail
 
 
@@ -110,12 +110,6 @@ def str_(stack: T[V, S], scope: Scope, fail: Fail):
     return (representation, rest), scope
 
 
-# @module.register("!")
-# def exclamation_mark(stack: T[V, S], scope: Scope, fail: Fail):
-#     (function, rest) = stack
-#     if function.tag != "code" and function.tag != "native":
-#         fail(f"{function} is not a function")
-#     return Recur(rest, scope, function)
 module.add("!", Code([CallByValue()], closure=None, flags=CodeFlags.PARENT_SCOPE))
 
 
@@ -147,7 +141,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 # <`import` implementation>
 
 def _make_name_getter(lookup: Dict[str, Value]):
-    def name_getter(stack: Stack, scope: Scope) -> Recur:
+    def name_getter(stack: Stack, scope: Scope):
         if stack is None:
             raise RuntimeError("module getter on an empty stack")
         (name, rest) = stack
@@ -159,8 +153,8 @@ def _make_name_getter(lookup: Dict[str, Value]):
             raise LookupError(f"member {name.value} not found")
 
         function = lookup[name.value]
-        return Recur(rest, scope, function)  # type: ignore
-    return name_getter
+        return (function, rest), scope
+    return Code([Put(NativeFunction(name_getter)),  CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
 
 def _import_all(scope: Scope, module: Module):
@@ -168,7 +162,7 @@ def _import_all(scope: Scope, module: Module):
 
 
 def _import_qualified(scope: Scope, module: Module, target_name: str):
-    return {target_name: NativeFunction(_make_name_getter(module.members))}
+    return {target_name: _make_name_getter(module.members)}
 
 
 def _import_prefixed(scope: Scope, module: Module, prefix: str):

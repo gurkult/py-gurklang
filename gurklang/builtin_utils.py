@@ -4,9 +4,9 @@ Utilities for creating built-in modules
 
 from dataclasses import field, dataclass
 from immutables import Map
-from typing import Callable,  NoReturn, Optional, TypeVar, Union, Dict, Tuple
+from typing import Callable,  NoReturn, Optional, TypeVar, Dict, Tuple
 from .vm_utils import repr_stack
-from gurklang.types import Scope, Stack, Value, NativeFunction, Recur
+from gurklang.types import Scope, Stack, Value, NativeFunction
 
 Z = TypeVar("Z", bound=Stack, contravariant=True)
 
@@ -38,7 +38,7 @@ class Module:
     def register(self, name: Optional[str] = None):
         # Z is contravariant because a function should accept a subset of
         # stacks (e.g. only stacks with at least 2 elements)
-        def inner(fn: Callable[[Z, Scope, Fail], Union[Tuple[Stack, Scope], Recur]]):
+        def inner(fn: Callable[[Z, Scope, Fail], Tuple[Stack, Scope]]):
             fn_name = name or fn.__name__.replace("_", "-")
             def new_fn(stack, scope):
                 local_fail: Fail = lambda reason: _fail(fn_name, reason, stack, scope)

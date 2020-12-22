@@ -6,7 +6,7 @@ try:
 except ImportError:
     from typing import Literal
 from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True, repr=False)
@@ -14,17 +14,22 @@ class Scope:
     parent: Optional[Scope]
     id: int
     values: Map
+    _cache: Dict[str, Value] = field(default_factory=dict)
 
     def __getitem__(self, name: str) -> Value:
-        scope = self
-        while scope is not None:
-            if name in scope.values:
-                return scope.values[name]
-            scope = scope.parent
-        raise KeyError(name)
+        cache = self._cache
+        if name in cache:
+            return cache[name]
+        while self is not None:
+            v = self._cache.get(name) or self.values.get(name)
+            if v is not None:
+                cache[name] = v
+                return v
+            self = self.parent
+        raise KeyError(name) from None
 
     def __repr__(self):
-        return f"Map(values={set(self.values.keys())}, id={self.id!r}, parent={self.parent!r})"
+        return f"<Scope {self.id!r}: {' '.join(self.values.keys())}, id=, parent={self.parent!r}>"
 
     def with_member(self, key: str, value: Value) -> Scope:
         return Scope(self.parent, self.id, self.values.set(key, value))
@@ -153,24 +158,7 @@ class Code:
 @dataclass
 class NativeFunction:
     """A function implemented in Python, like `if` or `+`"""
-    fn: Callable[[Stack, Scope], Union[Tuple[Stack, Scope], Recur]]
+    fn: Callable[[Stack, Scope], Tuple[Stack, Scope]]
     tag: ClassVar[Literal["native"]] = "native"
 
 Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
-
-
-@dataclass
-class Recur:
-    """
-    Represent a delayed computation.
-
-    The computation being represented is:
-    1. Set the stack to `self.stack`
-    2. Set the scope to `self.scope`
-    3. Call the function `self.function`
-
-    This type is essential to allow a stackless implementation.
-    """
-    stack: Stack
-    scope: Scope
-    function: Union[NativeFunction, Code]

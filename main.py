@@ -121,7 +121,7 @@ source9 = R"""
 """
 
 
-stack, scope = vm.run(parse(source9))
+stack, scope = vm.run(parse(source8))
 
 print("\n----------------")
 print("Resulting stack:")
