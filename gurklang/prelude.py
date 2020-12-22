@@ -122,9 +122,9 @@ module.add("!", Code([CallByValue()], closure=None, flags=CodeFlags.PARENT_SCOPE
 @module.register("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (else_, (then, (condition, rest))) = stack
-    if condition == Atom("true"):
+    if condition == Atom.make("true"):
         return (then, rest), scope
-    elif condition == Atom("false"):
+    elif condition == Atom.make("false"):
         return (else_, rest), scope
     else:
         fail(f"{condition} is not a boolean (:true/:false)")
@@ -180,13 +180,13 @@ def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
 
 
 def _get_imported_members(scope: Scope, module: Module, import_options: Value):
-    if import_options == Atom("all"):
+    if import_options == Atom.make("all"):
         return _import_all(scope, module)
 
-    elif import_options == Atom("qual"):
+    elif import_options == Atom.make("qual"):
         return _import_qualified(scope, module, module.name)
 
-    elif import_options == Atom("prefix"):
+    elif import_options == Atom.make("prefix"):
         return _import_prefixed(scope, module, module.name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("as:"):

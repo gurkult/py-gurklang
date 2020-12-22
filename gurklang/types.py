@@ -5,7 +5,7 @@ try:
     from typing_extensions import Literal
 except ImportError:
     from typing import Literal
-from typing import Callable, ClassVar, Mapping, Sequence, Union, Optional, Tuple
+from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -53,40 +53,42 @@ Stack = Optional[Tuple["Value", "Stack"]]
 
 @dataclass(frozen=True)
 class Put:
-    # Put a single value on top of the stack
+    """Put a single value on top of the stack"""
     value: Value
     tag: ClassVar[Literal["put"]] = "put"
 
 @dataclass(frozen=True)
 class PutCode:
-    # Create a closure and put a code value on top of the stack
+    """Create a closure and put a code value on top of the stack"""
     value: Sequence[Instruction]
     tag: ClassVar[Literal["put_code"]] = "put_code"
 
 @dataclass(frozen=True)
 class CallByName:
-    # Call a function by name
+    """Call a function by name"""
     function_name: str
     tag: ClassVar[Literal["call"]] = "call"
 
 @dataclass(frozen=True)
 class CallByValue:
-    # Call a function by value
+    """Pop a function from the top of the stack and call it"""
     tag: ClassVar[Literal["call_by_value"]] = "call_by_value"
 
 @dataclass(frozen=True)
 class MakeVec:
-    # Collect `size` elements and make a vec
+    """Collect `size` elements and make a tuple"""
     size: int
     tag: ClassVar[Literal["make_vec"]] = "make_vec"
 
 @dataclass(frozen=True)
 class MakeScope:
+    """Create a local scope given a parent scope"""
     parent: Optional[Scope]
     tag: ClassVar[Literal["make_scope"]] = "make_scope"
 
 @dataclass(frozen=True)
 class PopScope:
+    """Discard the topmost scope and return to the parent scope"""
     tag: ClassVar[Literal["pop_scope"]] = "pop_scope"
 
 # `Instruction` is a single step executed by the interpreter
@@ -94,37 +96,55 @@ Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, P
 
 
 class CodeFlags(IntFlag):
+    """Optimization flags used by `Code`"""
     EMPTY = 0
     PARENT_SCOPE = 1
 
 
-@dataclass
+_atom_cache: Dict[str, Atom] = {}
+
+@dataclass(eq=False)
 class Atom:
-    # Atom, like :true
+    """
+    Atom, like :true
+
+    Atoms are cached and compared by identity.
+    """
     value: str
     tag: ClassVar[Literal["atom"]] = "atom"
 
+    @staticmethod
+    def make(name: str) -> Atom:
+        if name not in _atom_cache:
+            _atom_cache[name] = Atom(name)
+        return _atom_cache[name]
+
+
 @dataclass
 class Str:
-    # String, like "hello"
+    """String, like 'hello'"""
     value: str
     tag: ClassVar[Literal["str"]] = "str"
 
 @dataclass
 class Int:
-    # Integer, like 42
+    """Integer, like 42"""
     value: int
     tag: ClassVar[Literal["int"]] = "int"
 
 @dataclass
 class Vec:
-    # Vector (tuple), like (a b 7)
+    """
+    Vector (tuple), like (a b 7)
+
+    Tuples are referred to as vectors to prevent collisions with `Tuple`
+    """
     values: Sequence[Value]
     tag: ClassVar[Literal["vec"]] = "vec"
 
 @dataclass
 class Code:
-    # Code (funciton), like { :b var :a var b a }
+    """Code value like { :b var :a var b a }"""
     instructions: Sequence[Instruction]
     closure: Optional[Scope]
     flags: CodeFlags = CodeFlags.EMPTY
@@ -132,7 +152,7 @@ class Code:
 
 @dataclass
 class NativeFunction:
-    # A function implemented in Python, like `if` or `vec`
+    """A function implemented in Python, like `if` or `+`"""
     fn: Callable[[Stack, Scope], Union[Tuple[Stack, Scope], Recur]]
     tag: ClassVar[Literal["native"]] = "native"
 
@@ -141,6 +161,16 @@ Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
 
 @dataclass
 class Recur:
+    """
+    Represent a delayed computation.
+
+    The computation being represented is:
+    1. Set the stack to `self.stack`
+    2. Set the scope to `self.scope`
+    3. Call the function `self.function`
+
+    This type is essential to allow a stackless implementation.
+    """
     stack: Stack
     scope: Scope
     function: Union[NativeFunction, Code]

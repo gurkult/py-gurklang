@@ -24,4 +24,4 @@ def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
 @module.register("type")
 def get_type(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
-    return (Atom(head.tag), rest), scope
+    return (Atom.make(head.tag), rest), scope
