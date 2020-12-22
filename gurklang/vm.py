@@ -1,7 +1,11 @@
 from immutables import Map
-from typing import Optional
-from . import builtin_values
-from gurklang.types import Scope, Stack, Instruction, Value, Code, Vec
+from typing import Optional, Union, Tuple
+from . import prelude
+from gurklang.types import (
+    CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
+    Scope, Stack, Instruction, Code, Vec
+)
+from collections import deque
 
 
 _SCOPE_ID = 0
@@ -15,32 +19,58 @@ def make_scope(parent: Optional[Scope]) -> Scope:
     return Scope(parent, generate_scope_id(), Map())
 
 
-def call(stack: Stack, scope: Scope, function: Value) -> tuple[Stack, Scope]:
+def _load_function(scope: Scope, pipe: "deque[Instruction]", function: Union[Code, NativeFunction]):
     if function.tag == "native":
-        return function.fn(stack, scope)
-
-    elif function.tag == "code":
-        local_scope = make_scope(parent=scope.join_closure_scope(function.closure))
-
-        for instruction in function.instructions:
-            stack, local_scope = execute(stack, local_scope, instruction)
-
-        assert local_scope.parent is not None
-        return stack, local_scope.parent
-
+        pipe.append(CallByValue())
+        pipe.append(Put(function))
+    elif function.flags & CodeFlags.PARENT_SCOPE:
+        pipe.extend(reversed(function.instructions))
     else:
-        raise RuntimeError(function)
+        pipe.append(PopScope())
+        pipe.extend(reversed(function.instructions))
+        pipe.append(MakeScope(scope.join_closure_scope(function.closure)))
 
 
-def execute(stack: Stack, scope: Scope, instruction: Instruction) -> tuple[Stack, Scope]:
+def call(stack: Stack, scope: Scope, function: Union[Code, NativeFunction]) -> Tuple[Stack, Scope]:
+    """
+    Stackless implementation of calling a function.
+
+    Instructions are piped into a deque, from which they're popped
+    and executed one by one.
+    """
+    pipe: "deque[Instruction]" = deque()
+
+    _load_function(scope, pipe, function)
+
+    while pipe:
+        instruction = pipe.pop()
+
+        if instruction.tag == "call":
+            pipe.append(CallByValue())
+            pipe.append(Put(scope[instruction.function_name]))
+        elif instruction.tag == "call_by_value":
+            (function, stack) = stack  # type: ignore
+            if function.tag == "code":
+                _load_function(scope, pipe, function)
+            else:
+                stack, scope = function.fn(stack, scope)
+        else:
+            stack, scope = execute(stack, scope, instruction)
+
+    return stack, scope
+
+
+def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack, Scope]:
+    """
+    Execute an instruction and return new state of the system.
+
+    Pure function, i.e. doesn't perform any side effects.
+    """
     if instruction.tag == "put":
         return (instruction.value, stack), scope
 
     elif instruction.tag == "put_code":
         return (Code(instruction.value, scope), stack), scope
-
-    elif instruction.tag == "call":
-        return call(stack, scope, scope[instruction.function_name])
 
     elif instruction.tag == "make_vec":
         elements = []
@@ -49,11 +79,17 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> tuple[Stack
             elements.append(head)
         return (Vec(elements[::-1]), stack), scope
 
+    elif instruction.tag == "make_scope":
+        return stack, make_scope(instruction.parent)
+
+    elif instruction.tag == "pop_scope":
+        return stack, scope.parent  # type: ignore
+
     else:
         raise RuntimeError(instruction)
 
 
-builtin_scope = builtin_values.module.make_scope(generate_scope_id())
+builtin_scope = prelude.module.make_scope(generate_scope_id())
 global_scope = make_scope(parent=builtin_scope)
 
 

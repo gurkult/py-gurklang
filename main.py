@@ -10,6 +10,8 @@ source1 = R"""
 """
 
 source2 = R"""
+:math ( + ) import
+
 { :x var { x + } } :make_adder jar
 5 make_adder :add5 jar
 
@@ -74,7 +76,52 @@ source6 = R"""
 40 add5 print  #=> 45
 """
 
-stack, scope = vm.run(parse(source6))
+
+source7 = R"""
+:math ( + - < * ) import
+
+{ dup 2 <
+  { drop 1 } parent-scope
+  { dup 1 - n! * } parent-scope
+  if !
+} parent-scope :n! jar
+
+10000 n! println
+"""
+
+
+source8 = R"""
+:math ( + - < * ) import
+
+{
+  dup 2 <
+    { }
+    { dup 1 - rot3 * swap n!-impl } parent-scope
+    if !
+} parent-scope :n!-impl jar
+
+{ 1 swap n!-impl drop } parent-scope :n! jar
+
+100000 n! drop
+"""
+
+
+source9 = R"""
+:inspect :prefix import
+:math ( + - < * ) import
+
+{
+  dup 2 <
+  { drop 1 } parent-scope
+  { dup 1 - n! * } parent-scope
+  if !
+} parent-scope :n! jar
+
+:n! inspect.dis
+"""
+
+
+stack, scope = vm.run(parse(source8))
 
 print("\n----------------")
 print("Resulting stack:")

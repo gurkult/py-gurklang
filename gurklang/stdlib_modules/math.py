@@ -1,13 +1,21 @@
 import math
 
-from typing import TypeVar
+from typing import TypeVar, Tuple
 from ..builtin_utils import Module, Fail
-from ..types import Value, Stack, Scope, Int, Vec
+from ..types import Value, Stack, Scope, Int, Vec, Atom
 
 
 module = Module("math")
-T, V, S = tuple, Value, Stack
+T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
+
+
+@module.register("<")
+def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"{x} cannot be compared with {y}")
+    return ([Atom.make("false"), Atom.make("true")][x.value < y.value], rest), scope
 
 
 @module.register("+")
@@ -22,7 +30,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
-        fail(f"{y} cannot be subtracted from {y}")
+        fail(f"{y} cannot be subtracted from {x}")
     return (Int(x.value - y.value), rest), scope
 
 
@@ -53,7 +61,7 @@ def make_fraction(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Vec([Int(numerator), Int(denominator)]), rest), scope
 
 
-def _read_fraction(stack: T[V, Z], fail: Fail) -> tuple[tuple[int, int], Z]:
+def _read_fraction(stack: T[V, Z], fail: Fail) -> Tuple[Tuple[int, int], Z]:
     (head, rest) = stack
 
     if head.tag == "int":

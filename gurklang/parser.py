@@ -1,6 +1,6 @@
-from typing import Iterator
+from typing import Iterator, List
 from gurklang.parser_utils import build_tokenizer
-from gurklang.types import Instruction, Put, PutCode, Call, MakeVec, Atom, Str, Int
+from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
 import itertools
 
@@ -44,8 +44,10 @@ def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
         if token.name == "INT":
             yield Put(Int(int(token.value)))
         elif token.name == "NAME":
-            yield Put(Atom(token.value))
-        elif token.name == "STR_D" or token.name == "STR_S":
+            yield Put(Atom.make(token.value))
+        elif token.name == "ATOM":
+            yield Put(Atom.make(":" + token.value))
+        elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
         elif token.name == "LBR":
             yield PutCode(list(_parse_codeblock(token_stream)))
@@ -75,12 +77,12 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield Put(Int(int(token.value)))
 
         elif token.name == "NAME":
-            yield Call(token.value)
+            yield CallByName(token.value)
 
         elif token.name == "ATOM":
-            yield Put(Atom(token.value[1:]))
+            yield Put(Atom.make(token.value[1:]))
 
-        elif token.name == "STR_D" or token.name == "STR_S":
+        elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
@@ -96,5 +98,5 @@ def _parse_stream(token_stream: Iterator[Token], length: int) -> Iterator[Instru
     ))
 
 
-def parse(source: str) -> list[Instruction]:
+def parse(source: str) -> List[Instruction]:
     return list(_parse_stream(_lex(source), len(source)))

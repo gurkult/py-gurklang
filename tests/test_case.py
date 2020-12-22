@@ -43,3 +43,12 @@ def test_case_stack_capture_order():
 
 def test_case_named_capture():
     assert run('1 {(a) {a}} case') == number_stack(1)
+
+
+def test_case_atom_match():
+    assert run(':rect {(:rect) {4}} case') == number_stack(4)
+
+
+def test_case_tuple_match():
+    """impossible until the parser allows nested tuples"""
+    assert True
