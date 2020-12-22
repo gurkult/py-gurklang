@@ -1,13 +1,13 @@
+from operator import itemgetter
 from typing import Iterable
-from . import vm
-from .vm_utils import stringify_value
-from . import stdlib_modules
-from gurklang.types import Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction
-from .builtin_utils import Module, Fail
 
+from gurklang.types import Scope, Stack, Put, Call, Value, Atom, Str, Code, NativeFunction, Vec
+from . import stdlib_modules
+from . import vm
+from .builtin_utils import Module, Fail
+from .vm_utils import stringify_value
 
 module = Module("builtins")
-
 
 # Shortcuts for brevity
 T, V, S = tuple, Value, Stack
@@ -103,6 +103,89 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (rv, rest), scope
 
 
+# <`case` implementation>
+
+def _matches_impl(
+        pattern: Value,
+        value: Value,
+        fail: Fail
+) -> tuple[bool, Iterable[tuple[int, Value]], dict[str, Value]]:
+    if isinstance(pattern, Vec) and isinstance(value, Vec):
+        captures: list[tuple[int, Value]] = []
+        variables: dict[str, Value] = {}
+        for nested_pattern, nested_value in zip(pattern.values, value.values):
+            matches, new_captures, new_variables = _matches_impl(nested_pattern, nested_value, fail)
+            if not matches:
+                return False, [], {}
+            if variables.keys() & new_variables.keys():
+                fail(f'duplicate variable name in pattern: {variables.keys() & new_variables.keys()!r}')
+            captures.extend(new_captures)
+            variables.update(new_variables)
+        return True, captures, variables
+    elif isinstance(pattern, Atom):
+        label = pattern.value
+        if label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
+            return True, [], {}
+        elif frozenset(label) == {'.'}:
+            return True, [(len(label), value)], {}
+        else:
+            return True, [], {label: Code([Put(value)], closure=None)}
+    elif pattern == value:
+        return True, [], {}
+    return False, [], {}
+
+
+def _matches(pattern: Vec, stack: Stack, fail: Fail) -> tuple[bool, Stack, dict[str, Value]]:
+    captures: list[tuple[int, Value]] = []
+    variables: dict[str, Value] = {}
+    original_stack = stack
+    for inner_pattern in reversed(pattern.values):
+        top, stack = stack
+        matches, stack_slots, new_vars = _matches_impl(inner_pattern, top, fail)
+        if not matches:
+            return False, original_stack, {}
+        if new_vars.keys() & variables.keys():
+            fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
+        captures.extend(stack_slots)
+        variables.update(new_vars)
+    print(captures)
+    captures.sort(key=itemgetter(0), reverse=True)
+    print(captures)
+    return (
+        True,
+        _stack_extend(stack, (el for _, el in reversed(captures))),
+        variables
+    )
+
+
+def _stack_extend(stack: Stack, elems: Iterable[Value]) -> Stack:
+    for elem in elems:
+        stack = (elem, stack)
+    return stack
+
+
+@module.register()
+def case(stack: T[V, S], scope: Scope, fail: Fail):
+    sentinel = Atom(object())  # type: ignore
+    fun, rest = stack
+    new_stack, _ = vm.call((sentinel, rest), scope, fun)
+    cases = []
+    while not (isinstance(new_stack[0], Atom) and new_stack[0].value is sentinel.value):
+        next_elem, new_stack = new_stack
+        cases.append(next_elem)
+    if len(cases) % 2 == 1:
+        fail('odd number of forms in case expression, there must be exactly one function per pattern')
+    for action, pattern in zip(cases[::2], cases[1::2]):
+        if not isinstance(pattern, Vec):
+            fail(f'a pattern must be a vector, not {pattern!r}')
+        matched, new_stack, new_variables = _matches(pattern, rest, fail)
+        if matched:
+            return vm.call(new_stack, scope.with_members(new_variables), action)
+    return stack, scope
+
+
+# </`case` implementation>
+
 # <`import` implementation>
 
 def _make_name_getter(lookup: dict[str, Value]):
@@ -119,6 +202,7 @@ def _make_name_getter(lookup: dict[str, Value]):
 
         function = lookup[name.value]
         return vm.call(rest, scope, function)
+
     return name_getter
 
 
@@ -186,10 +270,6 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         fail(f"invalid import options: {import_options}")
 
     return rest, scope.with_members(new_members)
-
-
-
-
 
 
 # </`import` implementation>
