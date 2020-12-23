@@ -25,8 +25,8 @@ def stringify_value(v: Value):
 
 
 def render_value_as_source(v: Value):
-    if isinstance(v, str):
-        return repr(str)
+    if v.tag == "str":
+        return repr(v.value)
     else:
         return stringify_value(v)
 

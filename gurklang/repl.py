@@ -3,6 +3,7 @@ Read Eval Print Loop
 
 The essential interactive programming tool!
 """
+from gurklang.vm_utils import render_value_as_source
 import sys
 import traceback
 from typing import Any, Optional, Tuple
@@ -15,14 +16,6 @@ init()
 from .types import Code, CodeFlags, Scope, Stack
 from .vm import run, call, make_scope
 from .parser import parse, ParseError
-
-
-def _get_input():
-    try:
-        return input(Fore.CYAN + ">>> " + Fore.RESET)
-    except BaseException:
-        print()
-        return "quit!"
 
 
 def print_red(*xs):
@@ -57,6 +50,8 @@ DEFAULT_PRELUDE = R"""
 :repl-utils :all import
 :inspect    :all import
 
+">>> " :repl[prompt] var
+
 "Gurklang v0.0.1" println
 "---------------" println
 """
@@ -75,10 +70,24 @@ class Repl:
         self.scope = scope
         self.last_traceback = None
 
+    @property
+    def prompt(self):
+        (prompt_obj, _rest), _scope = call(self.stack, self.scope, code("repl[prompt]"))  # type: ignore
+        if prompt_obj.tag != "str":
+            raise RuntimeError(f"Expected string for `repl[prompt]`, got {prompt_obj}")
+        return prompt_obj.value
+
+    def _get_input(self):
+        try:
+            return input(Fore.CYAN + self.prompt + Fore.RESET)
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return "quit!"
+
     def run(self):
         action = "continue"
         while action != "stop":
-            command = _get_input()
+            command = self._get_input()
             action = self._process_command(command)
 
     def _process_command(self, command: str):

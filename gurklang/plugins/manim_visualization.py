@@ -12,7 +12,7 @@ Scroll to the bottom to see a usage example
 import re
 from itertools import zip_longest
 from functools import reduce
-from typing import Iterator, List,  Tuple, Type
+from typing import Iterator, List, Optional, Tuple, Type, Union
 
 try:
     import manim
@@ -143,7 +143,7 @@ def _stack_diff(old_stack: Stack, new_stack: Stack) -> Tuple[int, List[Value]]:
     return (deleted, added)
 
 
-class StackDisplay:
+class LinearStackDisplay:
     cells: List["Mobject"]
 
     def __init__(self, scene: "Scene"):
@@ -201,6 +201,99 @@ class StackDisplay:
         self.scene.play(*animations)
 
 
+LINKED_STACK_DOWNSCALE = 0.75
+LINKED_STACK_HEIGHT = 0.9
+LINKED_STACK_SHIFT_AMOUNT = LINKED_STACK_DOWNSCALE * LINKED_STACK_HEIGHT + 0.02
+
+class LinkedStackDisplay:
+    depth: int
+
+    def __init__(self, scene: "Scene", stack: Tuple[Value, Stack], child: Union["LinkedStackDisplay", "Mobject"]):
+        self.depth = 0
+        self.scene = scene
+        self.child = child
+        self.stack = stack
+        value, _ = stack
+        self.cell, call_next = self._make_cell(value)
+        self.group = Group(self.cell, self.child_mobject)
+
+        self.scene.play(FadeIn(self.cell, run_time=0.25))
+        self.scene.play(ApplyMethod(self.child_mobject.shift, DOWN * LINKED_STACK_SHIFT_AMOUNT, run_time=0.2))
+        self.scene.play(ApplyMethod(self.child_mobject.scale_in_place, LINKED_STACK_DOWNSCALE, run_time=0.2))
+        self._increase_depth()
+        call_next()
+
+    def _reveal_source_code(self, code: Code, label: "Tex", cell: "Group"):
+        if code.name == "λ" or code.source_code is None:
+            return
+        new_label = Tex(_format_source_as_latex(code.source_code)).scale(0.8).move_to(label)
+        self.scene.play(Transform(label, new_label, run_time=1.0))
+        cell.remove(label)
+        cell.add(new_label)
+        self.scene.wait(0.5)
+
+    def _increase_depth(self):
+        self.depth += 1
+        if self.depth == 10:
+            self.scene.play(FadeOut(self.cell, run_time=0.1))
+        if isinstance(self.child, LinkedStackDisplay):
+            self.child._increase_depth()
+
+    def _decrease_depth(self):
+        self.depth -= 1
+        if self.depth == 9:
+            self.scene.play(FadeIn(self.cell, run_time=0.1))
+        if isinstance(self.child, LinkedStackDisplay):
+            self.child._decrease_depth()
+
+    def disintegrate(self):
+        self.scene.play(FadeOut(self.cell, run_time=0.1))
+        self.scene.remove(self.group)
+        self.scene.play(ScaleInPlace(self.child_mobject, 1 / LINKED_STACK_DOWNSCALE, run_time=0.09))
+        self.scene.play(ApplyMethod(self.child_mobject.shift, UP * LINKED_STACK_SHIFT_AMOUNT, run_time=0.09))
+        self._decrease_depth()
+
+    @property
+    def child_mobject(self) -> "Mobject":
+        if isinstance(self.child, LinkedStackDisplay):
+            return self.child.group
+        else:
+            return self.child
+
+    @staticmethod
+    def empty() -> "Mobject":
+        return Point(ORIGIN)
+
+    def _make_cell(self, value: Value):
+        rect = Rectangle(width=13.5, height=LINKED_STACK_HEIGHT)
+        label = Tex(_render_value(value)).scale(1.1).move_to(rect)
+        cell = Group(rect, label).set_color("#78ff90")
+        if value.tag == "code":
+            return cell, lambda: self._reveal_source_code(value, label, cell)  # type: ignore
+        else:
+            return cell, lambda: None
+
+    def update(self, new_stack: Stack) -> Union["LinkedStackDisplay", "Mobject"]:
+        deleted, added = _stack_diff(self.stack, new_stack)
+
+        rv = self._remove_top_n_cells(deleted)
+        for _ in range(len(added)):
+            rv = LinkedStackDisplay(self.scene, new_stack, rv)  # type: ignore
+            _, new_stack = new_stack  # type: ignore
+        self.scene.wait(0.5)
+        return rv
+
+    def _remove_top_n_cells(self, n: int) -> Union["LinkedStackDisplay", "Mobject"]:
+        top = self
+        for _ in range(n):
+            assert isinstance(top, LinkedStackDisplay)
+            top.disintegrate()
+            top = top.child
+        return top
+
+
+
+
 def visualize(name: str, source_code: str) -> Type["Scene"]:
     if manim is None:
         raise RuntimeError("manim is not installed. Check out https://docs.manim.community/en/v0.1.1/installation.html")
@@ -208,7 +301,7 @@ def visualize(name: str, source_code: str) -> Type["Scene"]:
     class Visualization(Scene):
         def construct(self) -> None:
             self.wait(0.1)
-            display = StackDisplay(self)
+            display = LinearStackDisplay(self)
             self.wait(0.1)
 
             def middleware(i: Instruction, old: Stack, new: Stack):
@@ -223,13 +316,42 @@ def visualize(name: str, source_code: str) -> Type["Scene"]:
     return Visualization
 
 
+def visualize_linked(name: str, source_code: str) -> Type["Scene"]:
+    if manim is None:
+        raise RuntimeError("manim is not installed. Check out https://docs.manim.community/en/v0.1.1/installation.html")
+
+    class Visualization(Scene):
+        def construct(self) -> None:
+            self.wait(0.1)
+            display: Union["Mobject", LinkedStackDisplay] = LinkedStackDisplay.empty()
+            self.wait(0.1)
+
+            def middleware(i: Instruction, old: Stack, new: Stack):
+                nonlocal display
+                if new is old:
+                    return
+                if isinstance(display, LinkedStackDisplay):
+                    display = display.update(new)
+                else:
+                    for stack in _stacks_in_reverse(new):
+                        if stack is not None:
+                            display = LinkedStackDisplay(self, stack, display)
+
+            run_with_middleware(parse(source_code), middleware)
+
+            self.wait(3)
+
+    Visualization.__name__ = name
+    return Visualization
+
+
 # Manim assigns `py` as __name__. Don't know why.
 if __name__ == "py":
     # python -m manim path/to/file.py FactorialRecursive -ql
-    FactorialRecursive = visualize(
+    FactorialRecursive = visualize_linked(
         "FactorialRecursive",
         R"""
-            :math ( + - < * ) import
+            :math ( + - * < ) import
 
             {
                 dup 2 <
