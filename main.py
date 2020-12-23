@@ -123,7 +123,34 @@ source9 = R"""
 """
 
 
-stack, scope = vm.run(parse(source9))
+source10 = R"""
+:math ( +       ) import
+:coro ( iterate ) import
+
+{ dup println 1 + } (1 ())
+iterate
+iterate
+iterate
+iterate
+
+"""
+
+
+source11 = R"""
+:math ( +       ) import
+:coro ( iterate ) import
+
+{
+  :b var :a var
+  a println
+  b a b +
+} (1 (1 ()))
+iterate iterate iterate iterate
+iterate iterate iterate iterate
+"""
+
+
+stack, scope = vm.run(parse(source11))
 
 print("\n----------------")
 print("Resulting stack:")
