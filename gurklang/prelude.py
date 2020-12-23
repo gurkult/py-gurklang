@@ -3,8 +3,8 @@ import dataclasses
 from typing import Iterable, Dict, List, Tuple
 from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction
-from .builtin_utils import Module, Fail
+from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Vec
+from .builtin_utils import Module, Fail, make_function
 
 
 module = Module("builtins")
@@ -135,12 +135,47 @@ module.add("!", Code([CallByValue()], closure=None, name="!", flags=CodeFlags.PA
 @module.register("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (else_, (then, (condition, rest))) = stack
-    if condition == Atom.make("true"):
+    if condition is Atom.make("true"):
         return (then, rest), scope
-    elif condition == Atom.make("false"):
+    elif condition is Atom.make("false"):
         return (else_, rest), scope
     else:
         fail(f"{condition} is not a boolean (:true/:false)")
+
+
+@make_function()
+def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
+    (fn, rest) = stack
+    if fn.tag not in ["code", "native"]:
+        fail(f"{fn} is not a function")
+    sentinel = Atom.make("{, sentinel}")
+    instructions = [Put(sentinel), Put(fn), CallByValue()]
+    code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--spreader")
+    return (code, rest), scope
+
+
+@make_function()
+def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
+    head, stack = stack  # type: ignore
+    sentinel = Atom.make("{, sentinel}")
+    elements = []
+    while head is not sentinel:
+        elements.append(head)
+        head, stack = stack  # type: ignore
+    elements.reverse()
+    return (Vec(elements), stack), scope
+
+
+module.add(
+    ",",
+    Code(
+        [Put(__spread_vec), CallByValue(), CallByValue(), Put(__collect_vec),CallByValue()],
+        closure=None,
+        flags=CodeFlags.PARENT_SCOPE,
+        name=",",
+        source_code="{ --spread-vec ! --collect-vec }"
+    )
+)
 
 
 @module.register()
@@ -193,13 +228,13 @@ def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
 
 
 def _get_imported_members(scope: Scope, module: Module, import_options: Value):
-    if import_options == Atom.make("all"):
+    if import_options is Atom.make("all"):
         return _import_all(scope, module)
 
-    elif import_options == Atom.make("qual"):
+    elif import_options is Atom.make("qual"):
         return _import_qualified(scope, module, module.name)
 
-    elif import_options == Atom.make("prefix"):
+    elif import_options is Atom.make("prefix"):
         return _import_prefixed(scope, module, module.name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("as:"):
