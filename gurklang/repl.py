@@ -17,46 +17,59 @@ from .vm import run, call, make_scope
 from .parser import parse, ParseError
 
 
+
+def _get_input():
+    try:
+        return input(Fore.CYAN + ">>> " + Fore.RESET)
+    except BaseException:
+        print()
+        return "quit!"
+
+
+def print_red(*xs: Any):
+    print(Fore.RED, end="")
+    print(*xs, end="")
+    print(Fore.RESET)
+
+
+def _display_parse_error(e: ParseError):
+    if e.is_eof:
+        print_red("Unexpected EOF while parsing", e.while_parsing_what)
+    else:
+        print_red(
+            f"Syntax error at {e.token.position} in token {e.token.value}"
+            f" while parsing {e.while_parsing_what}"
+        )
+
+
+def code(source: str) -> Code:
+    parsed = parse(source)
+    # PARENT_SCOPE is needed because otherwise, all of our names
+    # (including imports) will vanish, as the scope will be popped
+    return Code(parsed, name="<input>", closure=None, flags=CodeFlags.PARENT_SCOPE)
+
+
 def repl():
     last_traceback = None
 
     stack, scope = run([])
     scope = make_scope(scope)  # we need to make our own scope not to change builtins
-    stack, scope = call(stack, scope, Code(parse(r":repl-utils :all import"), closure=None, flags=CodeFlags.PARENT_SCOPE))
+    stack, scope = call(stack, scope, code(":repl-utils :all import"))
     while True:
-        try:
-            command = input(Fore.CYAN + ">>> " + Fore.RESET)
-        except BaseException:
-            command = "quit!"
-            print()
+        command = _get_input()
 
         if command.strip() == "quit!":
             print("Bye for now.")
             break
         elif command.strip() == "traceback?":
-            if last_traceback is None:
-                print("No traceback :-)")
-            else:
+            if last_traceback is not None:
                 traceback.print_exception(*last_traceback)  # type: ignore
             continue
 
         try:
-            parsed = parse(command)
+            stack, scope = call(stack, scope, code(command))
         except ParseError as e:
-            if e.is_eof:
-                print(Fore.RED + f"Unexpected EOF while parsing {e.while_parsing_what}" + Fore.RESET)
-            else:
-                t = e.token
-                print(
-                    Fore.RED
-                    + f"Syntax error at {t.position} in token '{t.value}' ({t.name})"
-                    + f" while parsing {e.while_parsing_what}"
-                    + Fore.RESET
-                )
-            continue
-
-        try:
-            stack, scope = call(stack, scope, Code(parsed, None, name="<input>", source_code=command, flags=CodeFlags.PARENT_SCOPE))
+            _display_parse_error(e)
         except KeyboardInterrupt as e:
             print(Fore.RED + "CTRL + C" + Fore.RESET)
             break
