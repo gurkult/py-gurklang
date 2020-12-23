@@ -117,12 +117,17 @@ class Atom:
     Atoms are cached and compared by identity.
     """
     value: str
+    _original: bool = False
     tag: ClassVar[Literal["atom"]] = "atom"
+
+    def __post_init__(self):
+        if not self._original:
+            raise RuntimeError(f"Atoms must be acquired via the `Atom.make` method")
 
     @staticmethod
     def make(name: str) -> Atom:
         if name not in _atom_cache:
-            _atom_cache[name] = Atom(name)
+            _atom_cache[name] = Atom(name, True)
         return _atom_cache[name]
 
 
