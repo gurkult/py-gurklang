@@ -1,3 +1,5 @@
+from typing import List
+from gurklang.types import Atom, Instruction, Int, Stack, Value
 import pprint
 import gurklang.vm as vm
 from gurklang.vm_utils import repr_stack
@@ -121,8 +123,177 @@ source9 = R"""
 """
 
 
-stack, scope = vm.run(parse(source8))
+from manim import *
+import re
 
-print("\n----------------")
-print("Resulting stack:")
-pprint.pprint(repr_stack(stack))
+def tex_escape(text: str) -> str:
+    return (
+        text
+        .replace('\\', R'\textbackslash ')
+        .replace('&', R'\&')
+        .replace('%', R'\%')
+        .replace('$', R'\$')
+        .replace('#', R'\#')
+        .replace('_', R'\_')
+        .replace('{', R'\{')
+        .replace('}', R'\}')
+        .replace('~', R'\textasciitilde{}')
+        .replace('^', R'\^{}')
+        .replace('<', R'\textless{}')
+        .replace('>', R'\textgreater{}')
+    )
+
+
+def draw_value(value: Value) -> str:
+    if value.tag == "atom":
+        return R"\texttt{:" + tex_escape(value.value) + R"}"
+    elif value.tag == "str":
+        return tex_escape(repr(value.value))
+    elif value.tag == "int":
+        return tex_escape(str(value.value))
+    elif value.tag == "vec":
+        return R"$\left(\text{" + " ".join(map(draw_value, value.values)) + R"}\right)$"
+    elif value.tag == "native" or value.source_code is None:
+        return tex_escape(value.name) if value.name != "λ" else R"$\lambda$"
+    else:
+        # remove comments and indents from source:
+        source = re.sub(r"\#.*(?=$|\n)", "", value.source_code)
+        source = re.sub(r"\s+", " ", source)
+        return R"\texttt{" + tex_escape(source) + "}"
+
+
+def draw_stack(stack: Stack) -> str:
+    if stack is None:
+        return R"$\emptyset$"
+    head, rest = stack
+    return RF"({draw_value(head)}, {draw_stack(rest)})"
+
+def build_up_stack(scene: Scene, stack):
+    src = R"$\emptyset$"
+    tex = Tex(src)
+    yield FadeIn(tex)
+    while stack is not None:
+        head, stack = stack
+        src = f"({head}, {src})"
+        yield Transform(tex, Tex(src))
+
+
+from itertools import zip_longest
+
+
+def stacks_in_reverse(stack):
+    if stack is None:
+        yield None
+    else:
+        _, rest = stack
+        yield from stacks_in_reverse(rest)
+        yield stack
+
+
+def updates(stack1, stack2):
+    for (x, y) in zip_longest(stacks_in_reverse(stack1), stacks_in_reverse(stack2), fillvalue=updates.TOO_LONG):
+        if x is y:
+            yield ("same", x, y)
+        else:
+            yield ("different", x, y)
+updates.TOO_LONG = object()
+
+
+config.max_files_cached = 1000
+
+
+def stack_diff(old_stack: Stack, new_stack: Stack):
+    total = 0
+    extra = 0
+    added: List[Value] = []
+    for tag, x, y in updates(old_stack, new_stack):
+        if tag == "different":
+            total += 1
+            if x is updates.TOO_LONG:
+                extra += 1
+            if y is not updates.TOO_LONG:
+                added.append(y[0])
+    delete = total - extra
+    return (delete, added)
+
+
+class StackDisplay:
+    elements: List[Mobject]
+
+    def __init__(self, scene: Scene):
+        self.scene = scene
+        self.stack = None
+        self.elements = []
+        self.group = Group()
+
+    def update(self, new_stack: Stack):
+        delete, add = stack_diff(self.stack, new_stack)
+        print("stack =", self.stack)
+        print("new stack =", new_stack)
+        print("diff =", delete, add)
+        print()
+        if delete > 0:
+            for e in self.elements[-delete:][::-1]:
+                print("removing", e)
+                self.scene.play(FadeOutAndShift(e, direciton=RIGHT, run_time=0.1))
+                self.group.remove(e)
+                self.elements.pop()
+        for value in add:
+            rect = Rectangle(width=12.0, height=0.68)
+            text = Tex(draw_value(value)).scale(0.8).move_to(rect)
+            cell = Group(rect, text).set_color("#78ff90")
+            if self.elements != []:
+                cell.move_to(self.elements[-1]).shift(UP * 0.72)
+            self.elements.append(cell)
+            self.group.add(cell)
+            self.scene.play(FadeInFrom(cell, direction=LEFT, run_time=0.1))
+            self.scene.play(*self.arrange())
+            self.scene.play(FadeToColor(cell, color="#ffffff", run_time=0.1))
+        if delete > 0 or add != []:
+            self.scene.wait(0.2)
+        self.stack = new_stack
+
+    def arrange(self) -> List[Animation]:
+        return self.scene.compile_play_args_to_animation_list(
+            self.group.arrange, dict(direction=UP, center=True),
+            run_time=0.05,
+        )
+
+
+
+class Visualization(Scene):
+    def construct(self):
+        source = R"""
+            :math ( + - < * ) import
+
+            {
+                dup 2 <
+                { drop 1 }
+                { dup 1 - n! * }
+                if !
+            } :n! jar
+
+            5 n! println
+        """
+
+        self.wait(0.1)
+        display = StackDisplay(self)
+        self.wait(0.1)
+
+        def middleware(i: Instruction, old: Stack, new: Stack):
+            if new is not old:
+                display.update(new)
+
+        vm.run_with_middleware(parse(source), middleware)
+
+        self.wait(3)
+
+
+
+
+
+# stack, scope = vm.run(parse(source8))
+
+# print("\n----------------")
+# print("Resulting stack:")
+# pprint.pprint(repr_stack(stack))
