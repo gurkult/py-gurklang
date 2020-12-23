@@ -48,7 +48,7 @@ def floor_div(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     if x.tag != "int" or y.tag != "int":
         fail(f"Cannot perform floor division: {x} and {y} are not both ints")
     elif y.value == 0:
-        fail(f"Cannot perform floor division: division by zero")
+        fail(f"Division by zero: {x.value} 0 /")
     return (Int(x.value // y.value), rest), scope
 
 
@@ -58,7 +58,7 @@ def modulo(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     if x.tag != "int" or y.tag != "int":
         fail(f"Cannot get modulo: {x} and {y} are not both ints")
     elif y.value == 0:
-        fail(f"Cannot perform modulo division: division by zero")
+        fail(f"Division by zero: {x.value} 0 %")
     return (Int(x.value % y.value), rest), scope
 
 
