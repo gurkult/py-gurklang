@@ -114,6 +114,4 @@ def _parse_stream(source: str, token_stream: Iterator[Token]) -> Iterator[Instru
 
 
 def parse(source: str) -> List[Instruction]:
-    p = list(_parse_stream(source, _lex(source)))
-    print(p)
-    return p
+    return list(_parse_stream(source, _lex(source)))
