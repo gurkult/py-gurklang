@@ -10,11 +10,16 @@ def stringify_value(v: Value):
     elif v.tag == "atom":
         return ":" + v.value
     elif v.tag == "code":
-        return "{...}"
+        if v.name == "λ" and v.source_code is not None:
+            return v.source_code
+        elif v.name == "λ":
+            return "{...}"
+        else:
+            return v.name
     elif v.tag == "vec":
         return "(" + " ".join(map(stringify_value, v.values)) + ")"
     elif v.tag == "native":
-        return f"<builtin {v.fn.__name__}>"
+        return f"{v.name} (built-in)"
     else:
         raise RuntimeError(v)
 

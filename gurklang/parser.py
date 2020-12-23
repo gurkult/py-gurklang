@@ -31,6 +31,19 @@ tokenizer = build_tokenizer(
 Token = tokenizer.token_type
 
 
+class ParseError(Exception):
+    def __init__(self, source: str, while_parsing_what: str, token: Token):
+        self.source = source
+        self.while_parsing_what = while_parsing_what
+        self.token = token
+        super().__init__(token)
+
+    def is_eof(self):
+        # This is related to the RBR } hack in the `parse` function
+        return self.token.position == len(self.source)
+
+
+
 def _lex(source: str) -> Iterator[Token]:
     return tokenizer.tokenize(source)
 
@@ -54,11 +67,11 @@ def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instructi
         elif token.name == "LBR":
             yield PutCode(list(_parse_codeblock(source, token_stream)))
         else:
-            raise ValueError(token)
+            raise ParseError(source, "a tuple literal", token)
 
         n += 1
     else:
-        raise ValueError(token)  # type: ignore
+        raise ParseError(source, "a tuple literal", token)  # type: ignore
     yield MakeVec(n)
 
 
@@ -103,9 +116,9 @@ def _parse_codeblock(
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
-            raise ValueError(token)
+            raise ParseError(source, "a code literal", token)
     else:
-        raise ValueError(token)  # type: ignore
+        raise ParseError(source, "a code literal", token)  # type: ignore
 
 
 def _parse_stream(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:

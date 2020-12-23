@@ -5,19 +5,16 @@ Utilities for creating built-in modules
 from dataclasses import field, dataclass
 from immutables import Map
 from typing import Callable,  NoReturn, Optional, TypeVar, Dict, Tuple
-from .vm_utils import repr_stack
-from gurklang.types import Scope, Stack, Value, NativeFunction
+from .vm_utils import repr_stack, stringify_value
+from gurklang.types import Code, CodeFlags, Instruction, Scope, Stack, Value, NativeFunction
 
 Z = TypeVar("Z", bound=Stack, contravariant=True)
 
 
 def _fail(name: str, reason: str, stack: Stack, scope: Scope):
-    print(f"Failure in function {name!r}.")
+    print("Failure in function", name)
     print("Reason:", reason)
-    print("> Stack: ", repr_stack(stack))
-    print("> Most inner scope: ", scope.values)
-    if scope.parent is not None:
-        print("> Parent scope: ", scope.parent.values)
+    print("> Stack: ", "[" + " ".join(map(stringify_value, repr_stack(stack))) + "]")
     raise RuntimeError(name, reason)
 
 
@@ -60,3 +57,33 @@ def make_function(name: Optional[str] = None):
         native_fn = NativeFunction(new_fn, fn_name)
         return native_fn
     return inner
+
+
+def raw_function(*instructions: Instruction, name: str = "<raw>", source_code: Optional[str] = None):
+    """
+    Create `Code` with no closure and flags set to PARENT_SCORE
+    """
+    return Code(
+        instructions,
+        closure=None,
+        flags=CodeFlags.PARENT_SCOPE,
+        name=name,
+        source_code=source_code
+    )
+
+R"""saybegin
+!gurklang
+
+:math ( + ) import
+
+1 :x var
+x println
+
+{ x 1 + :x var } parent-scope :x++ jar
+
+x++
+x println
+
+x++ x++
+x println
+sayend"""
