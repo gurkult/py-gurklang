@@ -1,5 +1,5 @@
 from typing import TypeVar, Tuple
-from ..vm_utils import stringify_value
+from ..vm_utils import render_value_as_source
 from ..builtin_utils import Module, Fail, raw_function
 from ..types import CallByName, CallByValue, Put, Str, Value, Stack, Scope, Int
 
@@ -22,7 +22,7 @@ def stack_repr(stack: T[V, S], scope: Scope, fail: Fail):
             break
         (head, s) = s  # type: ignore
         # closure gotcha
-        render = lambda x, old_repr=render, head=head: old_repr(f"({stringify_value(head)} {x})")
+        render = lambda x, old_repr=render, head=head: old_repr(f"({render_value_as_source(head)} {x})")
 
     if s is None:
         representation = render("()")
@@ -32,6 +32,6 @@ def stack_repr(stack: T[V, S], scope: Scope, fail: Fail):
     return (Str(representation), rest), scope
 
 
-peek_n = raw_function(Put(stack_repr), CallByValue())
+peek_n = raw_function(Put(stack_repr), CallByValue(), CallByName("println"))
 module.add("peek-n", peek_n)
-module.add("peek", raw_function(Put(Int(8)), Put(peek_n), CallByValue(), CallByName("println")))
+module.add("peek", raw_function(Put(Int(8)), Put(peek_n), CallByValue()))

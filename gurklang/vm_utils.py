@@ -24,6 +24,13 @@ def stringify_value(v: Value):
         raise RuntimeError(v)
 
 
+def render_value_as_source(v: Value):
+    if isinstance(v, str):
+        return repr(str)
+    else:
+        return stringify_value(v)
+
+
 def unwrap_stack(stack: Stack) -> Iterator[Value]:
     while stack is not None:
         x, stack = stack  # type: ignore
