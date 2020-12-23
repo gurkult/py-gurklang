@@ -81,6 +81,20 @@ def print_string(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
+@module.register("input")
+def input_(stack: Stack, scope: Scope, fail: Fail):
+    return (Str(input()), stack), scope
+
+
+@module.register()
+def prompt(stack: T[V, S], scope: Scope, fail: Fail):
+    (head, rest) = stack
+    if head.tag != "str":
+        fail(f"{head} is not a string")
+    text = Str(input(f"{head.value} "))
+    return (text, stack), scope
+
+
 @module.register()
 def sleep(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
