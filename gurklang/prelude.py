@@ -3,7 +3,7 @@ import dataclasses
 from typing import Iterable, Dict, List, Tuple
 from .vm_utils import stringify_value
 from . import stdlib_modules
-from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Vec
+from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, NativeFunction, Vec, Int
 from .builtin_utils import Module, Fail, make_function
 
 
@@ -66,6 +66,33 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         fail(f"{identifier} is not an atom")
     fn = Code([Put(value)], name=identifier.value, closure=scope)
     return rest, scope.with_member(identifier.value, fn)
+
+
+@module.register("to-str")
+def to_str(stack: T[V, S], scope: Scope, fail: Fail):
+    """Converts a given value to its string representation and adds it to the stack."""
+    (head, rest) = stack
+    if head.tag in ("str", "int", "atom"):
+        return (Str(str(head.value)), rest), scope
+    elif head.tag == "vec":
+        tuple_ = f"({' '.join(str(i.value) for i in head.values)})"
+        return (Str(tuple_), rest), scope
+    else:
+        fail(f"type {head.tag} cannot be converted to type str")
+
+
+@module.register("to-int")
+def to_int(stack: T[V, S], scope: Scope, fail: Fail):
+    """Converts a given value to its int representation and adds it to the stack."""
+    (head, rest) = stack
+    if head.tag in ("str", "int", "atom"):
+        try:
+            value = int(head.value)
+            return (Int(value), rest), scope
+        except ValueError:
+            fail(f"cannot convert '{head.value}' to type int")
+    else:
+        fail(f"type {head.tag} cannot be converted to int")
 
 
 @module.register()
