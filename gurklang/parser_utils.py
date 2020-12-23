@@ -14,7 +14,7 @@ class Token(Generic[TokenName]):
     position: int
 
     @property
-    def span(self) -> tuple[int, int]:
+    def span(self) -> Tuple[int, int]:
         return (self.position, self.position + len(self.value))
 
 

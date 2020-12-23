@@ -1,4 +1,4 @@
-from typing import Any, Iterator, List, Generator
+from typing import Any, Iterator, List, Generator, Tuple
 from gurklang.parser_utils import build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
@@ -72,7 +72,7 @@ def _collect(gen):
 def _parse_codeblock(
     source: str,
     token_stream: Iterator[Token]
-) -> Generator[Instruction, None, tuple[int, int]]:
+) -> Generator[Instruction, None, Tuple[int, int]]:
     for token in token_stream:
         if token.name == "RBR":
             return token.span
