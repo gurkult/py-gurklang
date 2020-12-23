@@ -188,7 +188,7 @@ class Repl:
         if self.last_traceback is None:
             print("No traceback :-)")
         else:
-            traceback.print_exception(*last_traceback)  # type: ignore
+            traceback.print_exception(*self.last_traceback)  # type: ignore
 
     # StdoutSniper integration:
 
