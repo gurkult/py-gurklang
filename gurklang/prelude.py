@@ -46,8 +46,13 @@ def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (code, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
+
     if code.tag not in ["code", "native"]:
         fail(f"{code} is not code")
+
+    if code.tag == "code":
+        code = code.with_name(identifier.value)
+
     return rest, scope.with_member(identifier.value, code)
 
 
@@ -59,7 +64,7 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (value, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
-    fn = Code([Put(value)], closure=scope)
+    fn = Code([Put(value)], name=identifier.value, closure=scope)
     return rest, scope.with_member(identifier.value, fn)
 
 
@@ -124,7 +129,7 @@ def str_(stack: T[V, S], scope: Scope, fail: Fail):
     return (representation, rest), scope
 
 
-module.add("!", Code([CallByValue()], closure=None, flags=CodeFlags.PARENT_SCOPE))
+module.add("!", Code([CallByValue()], closure=None, name="!", flags=CodeFlags.PARENT_SCOPE))
 
 
 @module.register("if")
@@ -143,9 +148,9 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (function, (value, rest)) = stack
 
     if function.tag == "code":
-        rv = Code([Put(value), *function.instructions], closure=function.closure, flags=function.flags)
+        rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name, flags=function.flags)
     elif function.tag == "native":
-        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc))  # type: ignore
+        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc), function.name)  # type: ignore
     else:
         fail(f"{function} is not a function")
 
@@ -154,7 +159,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # <`import` implementation>
 
-def _make_name_getter(lookup: Dict[str, Value]):
+def _make_name_getter(lookup: Dict[str, Value], name: str):
     def name_getter(stack: Stack, scope: Scope):
         if stack is None:
             raise RuntimeError("module getter on an empty stack")
@@ -168,7 +173,7 @@ def _make_name_getter(lookup: Dict[str, Value]):
 
         function = lookup[name.value]
         return (function, rest), scope
-    return Code([Put(NativeFunction(name_getter)),  CallByValue()], None, CodeFlags.PARENT_SCOPE)
+    return Code([Put(NativeFunction(name_getter, name)),  CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
 
 def _import_all(scope: Scope, module: Module):
@@ -176,7 +181,7 @@ def _import_all(scope: Scope, module: Module):
 
 
 def _import_qualified(scope: Scope, module: Module, target_name: str):
-    return {target_name: _make_name_getter(module.members)}
+    return {target_name: _make_name_getter(module.members, target_name)}
 
 
 def _import_prefixed(scope: Scope, module: Module, prefix: str):
@@ -243,5 +248,5 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # </`import` implementation>
 
-module.add("print", Code([CallByName("str"), CallByName("print-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))
-module.add("println", Code([CallByName("str"), CallByName("println-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))
+module.add("print", Code([CallByName("str"), CallByName("print-string")], closure=None, name="print", flags=CodeFlags.PARENT_SCOPE))
+module.add("println", Code([CallByName("str"), CallByName("println-string")], closure=None, name="println", flags=CodeFlags.PARENT_SCOPE))

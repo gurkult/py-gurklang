@@ -1,3 +1,5 @@
+from typing import List
+from gurklang.types import Atom, Instruction, Int, Stack, Value
 import pprint
 import gurklang.vm as vm
 from gurklang.vm_utils import repr_stack
@@ -121,7 +123,7 @@ source9 = R"""
 """
 
 
-stack, scope = vm.run(parse(source8))
+stack, scope = vm.run(parse(source9))
 
 print("\n----------------")
 print("Resulting stack:")

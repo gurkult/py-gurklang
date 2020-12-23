@@ -6,7 +6,7 @@ try:
 except ImportError:
     from typing import Literal
 from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dataclass_replace
 
 
 @dataclass(frozen=True, repr=False)
@@ -66,6 +66,7 @@ class Put:
 class PutCode:
     """Create a closure and put a code value on top of the stack"""
     value: Sequence[Instruction]
+    source_code: Optional[str] = None
     tag: ClassVar[Literal["put_code"]] = "put_code"
 
 @dataclass(frozen=True)
@@ -153,12 +154,18 @@ class Code:
     instructions: Sequence[Instruction]
     closure: Optional[Scope]
     flags: CodeFlags = CodeFlags.EMPTY
+    name: str = "λ"
+    source_code: Optional[str] = None
     tag: ClassVar[Literal["code"]] = "code"
+
+    def with_name(self, name: str) -> Code:
+        return dataclass_replace(self, name=name)
 
 @dataclass
 class NativeFunction:
     """A function implemented in Python, like `if` or `+`"""
     fn: Callable[[Stack, Scope], Tuple[Stack, Scope]]
+    name: str = "λ"
     tag: ClassVar[Literal["native"]] = "native"
 
 Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
