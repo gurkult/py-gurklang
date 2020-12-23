@@ -143,6 +143,7 @@ def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
         fail(f"{condition} is not a boolean (:true/:false)")
 
 
+# <`,` implementation>
 @make_function()
 def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
     (fn, rest) = stack
@@ -152,7 +153,6 @@ def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
     instructions = [Put(sentinel), Put(fn), CallByValue()]
     code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--spreader")
     return (code, rest), scope
-
 
 @make_function()
 def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
@@ -165,7 +165,6 @@ def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
     elements.reverse()
     return (Vec(elements), stack), scope
 
-
 module.add(
     ",",
     Code(
@@ -176,6 +175,7 @@ module.add(
         source_code="{ --spread-vec ! --collect-vec }"
     )
 )
+# </`,` implementation>
 
 
 @module.register()
