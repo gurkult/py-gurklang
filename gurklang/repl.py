@@ -8,12 +8,12 @@ import sys
 import traceback
 from typing import Any, Callable, Optional, TextIO, Tuple
 
-from colorama import init, Fore, Back
+from colorama import init, Fore, Style
 Fore: Any
-Back: Any
+Style: Any
 init()
 
-from .types import Code, CodeFlags, Scope, Stack
+from .types import Code, CodeFlags, Scope, Stack, Value
 from .vm import run, call, make_scope
 from .parser import parse, ParseError
 
@@ -85,35 +85,50 @@ class StdoutSniper:
 
 
 DEFAULT_PRELUDE = R"""
-:repl-utils :all import
-:inspect    :all import
+:repl-utils :all                               import
+:inspect    :prefix                            import
+:coro       :prefix                            import
+:math       ( < + - * / % %make %+ %- %* %/ )  import
 
 
 {
   ">>> " :repl[prompt]        var
   ""     :repl[before-output] var
   ""     :repl[after-output]  var
+  "<-- " :repl[before-stack]  var
 }
 parent-scope :repl[default-style] jar
 
 
 {
-  "│\n│ "                  :repl[prompt]        var
+  "│ "                     :repl[prompt]        var
   "└───────────────────\n" :repl[before-output] var
-  "\n"                     :repl[after-output]  var
+  ""                       :repl[after-output]  var
+  "├─"                     :repl[before-stack]  var
 }
 parent-scope :repl[box-style] jar
 
 
 {
-  "In : " :repl[prompt]        var
+  " In: " :repl[prompt]        var
   "Out: " :repl[before-output] var
   ""      :repl[after-output]  var
+  "===> " :repl[before-stack]  var
 }
 parent-scope :repl[in-out-style] jar
 
 
+{ :true :repl[display-stack] var }
+parent-scope :show-stack jar
+
+
+{ :false :repl[display-stack] var }
+parent-scope :hide-stack jar
+
+
 repl[default-style]
+hide-stack
+
 
 
 "Gurklang v0.0.1" println
@@ -172,6 +187,7 @@ class Repl:
             _display_runtime_error(e)
         finally:
             self.sniper.unwatch()
+            self._display_stack()
         return "continue"
 
     def _process_directives(self, command: str):
@@ -205,25 +221,57 @@ class Repl:
         if s != "":
             writer.write(Fore.CYAN + s + Fore.RESET)
 
+    def _display_stack(self):
+        if self._is_stack_display_on:
+            print(Fore.CYAN + self._string_before_stack + Fore.YELLOW + Style.BRIGHT, end="")
+            self._run_code_for_side_effect("12 stack-repr print")
+            print(Fore.RESET + Style.RESET_ALL)
+
     # Interacting with configuration:
 
-    def _get_soft_config_value(self, label: str) -> str:
-        (str_obj, _rest), _scope = call(self.stack, self.scope, code(f"repl[{label}]"))  # type: ignore
-        if str_obj.tag != "str":
-            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_obj}")
-        return str_obj.value
+    def _run_code_for_side_effect(self, source_code: str):
+        call(self.stack, self.scope, code(source_code))
+
+    def _run_code_for_single_value(self, source_code: str) -> Value:
+        stack, _scope = call(self.stack, self.scope, code(source_code))
+        if stack is None:
+            raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
+        (head, _rest) = stack
+        return head
+
+    def _get_str_config_value(self, label: str) -> str:
+        str_ = self._run_code_for_single_value(f"repl[{label}]")
+        if str_.tag != "str":
+            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
+        return str_.value
+
+    def _get_bool_config_value(self, label: str) -> bool:
+        atom = self._run_code_for_single_value(f"repl[{label}]")
+        if atom.tag != "atom":
+            raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
+        if atom.value not in ["true", "false"]:
+            raise RuntimeError(f"Expected :true or :False for `repl[{label}]`, got {atom}")
+        return atom.value == "true"
+
+    @property
+    def _string_before_stack(self) -> str:
+        return self._get_str_config_value("before-stack")
 
     @property
     def _string_before_output(self) -> str:
-        return self._get_soft_config_value("before-output")
+        return self._get_str_config_value("before-output")
 
     @property
     def _string_after_output(self) -> str:
-        return self._get_soft_config_value("after-output")
+        return self._get_str_config_value("after-output")
 
     @property
     def _prompt(self) -> str:
-        return self._get_soft_config_value("prompt")
+        return self._get_str_config_value("prompt")
+
+    @property
+    def _is_stack_display_on(self) -> bool:
+        return self._get_bool_config_value("display-stack")
 
 
 def repl():
