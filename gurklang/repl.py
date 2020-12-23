@@ -90,7 +90,7 @@ class Repl:
         except ParseError as e:
             _display_parse_error(e)
         except KeyboardInterrupt as e:
-            print(Fore.RED + "CTRL + C" + Fore.RESET)
+            print_red("CTRL + C")
             return "stop"
         except BaseException as e:
             self.last_traceback = sys.exc_info()
@@ -102,11 +102,16 @@ class Repl:
             print("Bye for now.")
             return "stop"
         elif command.strip() == "traceback?":
-            if self.last_traceback is not None:
-                traceback.print_exception(*last_traceback)  # type: ignore
+            self._print_last_traceback()
             return "continue"
         else:
             return None
+
+    def _print_last_traceback(self):
+        if self.last_traceback is None:
+            print("No traceback :-)")
+        else:
+            traceback.print_exception(*last_traceback)  # type: ignore
 
 
 def repl():
