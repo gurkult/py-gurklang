@@ -47,7 +47,7 @@ class Module:
                 except Exception as e:
                     local_fail(f"uncaught exception {type(e)}: {' '.join(e.args)}")
             new_fn.__qualname__ = "new_fn"
-            self.add(fn_name, NativeFunction(new_fn))
+            self.add(fn_name, NativeFunction(new_fn, fn_name))
         return inner
 
     def make_scope(self, id: int, parent: Optional[Scope]=None):

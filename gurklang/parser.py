@@ -1,4 +1,4 @@
-from typing import Iterator, List
+from typing import Any, Iterator, List, Generator
 from gurklang.parser_utils import build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
@@ -35,7 +35,7 @@ def _lex(source: str) -> Iterator[Token]:
     return tokenizer.tokenize(source)
 
 
-def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
+def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
     n = 0
     for token in token_stream:
         if token.name == "RPAR":
@@ -50,7 +50,7 @@ def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
         elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
         elif token.name == "LBR":
-            yield PutCode(list(_parse_codeblock(token_stream)))
+            yield PutCode(list(_parse_codeblock(source, token_stream)))
         else:
             raise ValueError(token)
 
@@ -60,18 +60,33 @@ def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
     yield MakeVec(n)
 
 
-def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
+def _collect(gen):
+    rv: Any = None
+    def helper_generator():
+        nonlocal rv
+        rv = yield from gen
+    elements = list(helper_generator())
+    return (rv, elements)
+
+
+def _parse_codeblock(
+    source: str,
+    token_stream: Iterator[Token]
+) -> Generator[Instruction, None, tuple[int, int]]:
     for token in token_stream:
         if token.name == "RBR":
-            break
+            return token.span
 
         elif token.name == "LBR":
             # put_code is distinct from put, because the runtime
             # will attach a closure to the code
-            yield PutCode(list(_parse_codeblock(token_stream)))
+
+            (_, end_pos), elements = _collect(_parse_codeblock(source, token_stream))
+
+            yield PutCode(elements, source_code=source[token.position:end_pos])
 
         elif token.name == "LPAR":
-            yield from _parse_vec(token_stream)
+            yield from _parse_vec(source, token_stream)
 
         elif token.name == "INT":
             yield Put(Int(int(token.value)))
@@ -91,12 +106,14 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
         raise ValueError(token)  # type: ignore
 
 
-def _parse_stream(token_stream: Iterator[Token], length: int) -> Iterator[Instruction]:
-    return _parse_codeblock(itertools.chain(
+def _parse_stream(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
+    return _parse_codeblock(source, itertools.chain(
         token_stream,
-        [Token("RBR", "}", length)],
+        [Token("RBR", "}", len(source))],
     ))
 
 
 def parse(source: str) -> List[Instruction]:
-    return list(_parse_stream(_lex(source), len(source)))
+    p = list(_parse_stream(source, _lex(source)))
+    print(p)
+    return p
