@@ -140,13 +140,35 @@ source11 = R"""
 :math ( +       ) import
 :coro ( iterate ) import
 
+#########################################
+
+{ swap parent-scope swap jar }
+parent-scope :pjar jar
+
+#########################################
+
+{ { } parent-scope close close }
+:--make-generator pjar
+
+{ rot3 swap --make-generator swap jar }
+:generator pjar
+
+{ iterate forever }
+:forever pjar
+
+#########################################
+
 {
-  :b var :a var
-  a println
-  b a b +
-} (1 (1 ()))
-iterate iterate iterate iterate
-iterate iterate iterate iterate
+  swap dup
+  println
+  (1 100) sleep
+  swap dup rot3 +
+}
+parent-scope
+(1 (1 ()))
+:fib generator
+
+fib forever
 """
 
 
