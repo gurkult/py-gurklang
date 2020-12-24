@@ -110,6 +110,15 @@ parent-scope :repl[box-style] jar
 
 
 {
+  "│\n│ "                     :repl[prompt]        var
+  "└───────────────────\n" :repl[before-output] var
+  "\n"                       :repl[after-output]  var
+  "│\n╞═"                     :repl[before-stack]  var
+}
+parent-scope :repl[wide-box-style] jar
+
+
+{
   " In: " :repl[prompt]        var
   "Out: " :repl[before-output] var
   ""      :repl[after-output]  var
@@ -128,7 +137,6 @@ parent-scope :hide-stack jar
 
 repl[default-style]
 hide-stack
-
 
 
 "Gurklang v0.0.1" println
