@@ -10,7 +10,7 @@ T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 
-@module.register("<")
+@module.register_simple("<")
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -18,7 +18,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return ([Atom.make("false"), Atom.make("true")][x.value < y.value], rest), scope
 
 
-@module.register("+")
+@module.register_simple("+")
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -26,7 +26,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Int(x.value + y.value), rest), scope
 
 
-@module.register("-")
+@module.register_simple("-")
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -34,7 +34,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Int(x.value - y.value), rest), scope
 
 
-@module.register("*")
+@module.register_simple("*")
 def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -42,7 +42,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Int(x.value * y.value), rest), scope
 
 
-@module.register("/")
+@module.register_simple("/")
 def floor_div(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -52,7 +52,7 @@ def floor_div(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Int(x.value // y.value), rest), scope
 
 
-@module.register("%")
+@module.register_simple("%")
 def modulo(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -67,7 +67,7 @@ def _simplify_fraction(numerator: int, denominator: int):
     return (numerator // gcd, denominator // gcd)
 
 
-@module.register("%make")
+@module.register_simple("%make")
 def make_fraction(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
@@ -100,7 +100,7 @@ def _read_fraction(stack: T[V, Z], fail: Fail) -> Tuple[Tuple[int, int], Z]:
     return (xn.value, xm.value), rest
 
 
-@module.register("%+")
+@module.register_simple("%+")
 def add_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
@@ -110,7 +110,7 @@ def add_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Vec([Int(numerator), Int(denominator)]), stack__), scope
 
 
-@module.register("%-")
+@module.register_simple("%-")
 def sub_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
@@ -120,7 +120,7 @@ def sub_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Vec([Int(numerator), Int(denominator)]), stack__), scope
 
 
-@module.register("%*")
+@module.register_simple("%*")
 def mul_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
@@ -130,7 +130,7 @@ def mul_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Vec([Int(numerator), Int(denominator)]), stack__), scope
 
 
-@module.register("%/")
+@module.register_simple("%/")
 def div_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)

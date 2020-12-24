@@ -6,8 +6,7 @@ from gurklang.types import Int
 
 
 def run(code):
-    stack, _ = vm.run(parse(code))
-    return stack
+    return vm.run(parse(code)).stack
 
 
 def number_stack(*args):

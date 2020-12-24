@@ -3,7 +3,7 @@ from typing import Callable, Optional, Union, Tuple
 from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
-    Scope, Stack, Instruction, Code, Vec
+    Scope, Stack, Instruction, Code, State, Vec
 )
 from collections import deque
 
@@ -31,7 +31,7 @@ def _load_function(scope: Scope, pipe: "deque[Instruction]", function: Union[Cod
         pipe.append(MakeScope(scope.join_closure_scope(function.closure)))
 
 
-def call(stack: Stack, scope: Scope, function: Union[Code, NativeFunction]) -> Tuple[Stack, Scope]:
+def call(state: State, function: Union[Code, NativeFunction]) -> State:
     """
     Stackless implementation of calling a function.
 
@@ -40,32 +40,33 @@ def call(stack: Stack, scope: Scope, function: Union[Code, NativeFunction]) -> T
     """
     pipe: "deque[Instruction]" = deque()
 
-    _load_function(scope, pipe, function)
+    _load_function(state.scope, pipe, function)
 
     while pipe:
         instruction = pipe.pop()
 
         if instruction.tag == "call":
             pipe.append(CallByValue())
-            pipe.append(Put(scope[instruction.function_name]))
+            pipe.append(Put(state.scope[instruction.function_name]))
         elif instruction.tag == "call_by_value":
-            (function, stack) = stack  # type: ignore
+            (function, stack) = state.stack  # type: ignore
+            state = State(stack, state.scope)
             if function.tag == "code":
-                _load_function(scope, pipe, function)
+                _load_function(state.scope, pipe, function)
             else:
-                stack, scope = function.fn(stack, scope)
+                state = function.fn(state)
         else:
-            stack, scope = execute(stack, scope, instruction)
+            stack, scope = execute(state.stack, state.scope, instruction)
+            state = State(stack, scope)
 
-    return stack, scope
+    return state
 
 
 def call_with_middleware(
-    stack: Stack,
-    scope: Scope,
+    state: State,
     function: Union[Code, NativeFunction],
     middleware: Callable[[Instruction, Stack, Stack], None],
-) -> Tuple[Stack, Scope]:
+) -> State:
     """
     Stackless implementation of calling a function.
 
@@ -74,30 +75,30 @@ def call_with_middleware(
     """
     pipe: "deque[Instruction]" = deque()
 
-    _load_function(scope, pipe, function)
+    _load_function(state.scope, pipe, function)
 
     while pipe:
         instruction = pipe.pop()
 
         if instruction.tag == "call":
             pipe.append(CallByValue())
-            pipe.append(Put(scope[instruction.function_name]))
+            pipe.append(Put(state.scope[instruction.function_name]))
         elif instruction.tag == "call_by_value":
-            (function, new_stack) = stack  # type: ignore
-            middleware(instruction, stack, new_stack)
-            stack = new_stack
+            (function, stack) = state.stack  # type: ignore
+            middleware(instruction, state.stack, stack)
+            state = state.with_stack(stack)
             if function.tag == "code":
-                _load_function(scope, pipe, function)
+                _load_function(state.scope, pipe, function)
             else:
-                new_stack, scope = function.fn(stack, scope)
-                middleware(instruction, stack, new_stack)
-                stack = new_stack
+                new_state = function.fn(state)
+                middleware(instruction, state.stack, new_state.stack)
+                state = new_state
         else:
-            new_stack, scope = execute(stack, scope, instruction)
-            middleware(instruction, stack, new_stack)
-            stack = new_stack
+            stack, scope = execute(state.stack, state.scope, instruction)
+            middleware(instruction, state.stack, stack)
+            state = state.with_stack(stack).with_scope(scope)
 
-    return stack, scope
+    return state
 
 
 
@@ -136,16 +137,14 @@ global_scope = make_scope(parent=builtin_scope)
 
 def run(instructions):
     return call(
-        stack=None,
-        scope=global_scope,
-        function=Code(instructions, closure=None, name="<entry-point>")
+        State(None, global_scope),
+        Code(instructions, closure=None, name="<entry-point>")
     )
 
 
 def run_with_middleware(instructions, middleware):
     return call_with_middleware(
-        stack=None,
-        scope=global_scope,
-        function=Code(instructions, closure=None, name="<entry-point>"),
-        middleware=middleware
+        State(None, global_scope),
+        Code(instructions, closure=None, name="<entry-point>"),
+        middleware
     )

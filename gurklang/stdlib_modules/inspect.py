@@ -14,7 +14,7 @@ T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 
-@module.register()
+@module.register_simple()
 def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
     (code, rest) = stack
     if code.tag != "code":
@@ -23,7 +23,7 @@ def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
-@module.register()
+@module.register_simple()
 def dis(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
 
@@ -87,7 +87,7 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
 
 
 
-@module.register("type")
+@module.register_simple("type")
 def get_type(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     return (Atom.make(head.tag), rest), scope

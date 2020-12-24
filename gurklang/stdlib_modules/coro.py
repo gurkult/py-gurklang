@@ -1,6 +1,6 @@
 from typing import List, Sequence, TypeVar, Tuple
 from ..vm_utils import stringify_value
-from ..builtin_utils import Module, Fail, make_function
+from ..builtin_utils import Module, Fail, make_simple
 from ..types import Atom, CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope, Int, Vec
 
 
@@ -33,12 +33,12 @@ def _stack_to_vec(stack: Stack) -> Vec:
     return rv
 
 
-@make_function()
+@make_simple()
 def __iterate(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (initial, (fn, rest)) = stack
     initial_stack_vec = _vec_to_stack(initial, fail)
 
-    @make_function()
+    @make_simple()
     def __set_resulting_stack(resulting_stack: Stack, resulting_scope: Scope, _: Fail):
         stack_vec = _stack_to_vec(resulting_stack)
         return (stack_vec, (fn, rest)), resulting_scope
@@ -65,7 +65,7 @@ module.add("iterate",
 
 
 def restore_stack(stack: Stack):
-    @make_function()
+    @make_simple()
     def __restore_stack(__stack: Stack, scope: Scope, fail: Fail):
         return stack, scope
     return __restore_stack

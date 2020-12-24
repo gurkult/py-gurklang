@@ -64,6 +64,24 @@ Stack = Optional[Tuple["Value", "Stack"]]
 
 
 @dataclass(frozen=True)
+class State:
+    stack: Stack
+    scope: Scope
+
+    def add(self, *values: "Value"):
+        stack = self.stack
+        for value in values:
+            stack = (value, stack)
+        return State(stack, self.scope)
+
+    def with_stack(self, stack: Stack):
+        return dataclass_replace(self, stack=stack)
+
+    def with_scope(self, scope: Scope):
+        return dataclass_replace(self, scope=scope)
+
+
+@dataclass(frozen=True)
 class Put:
     """Put a single value on top of the stack"""
     value: Value
