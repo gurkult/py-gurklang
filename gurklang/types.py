@@ -31,7 +31,14 @@ class Scope:
     def __repr__(self):
         return f"<Scope {self.id!r}: {' '.join(self.values.keys())}, id=, parent={self.parent!r}>"
 
+    def without_member(self, key: str, value: Value):
+        if key not in self.values:
+            return self
+        return Scope(self.parent, self.id, self.values.delete(key))
+
     def with_member(self, key: str, value: Value) -> Scope:
+        if key in self.values:
+            raise RuntimeError(f"Trying to reassign {key}")
         return Scope(self.parent, self.id, self.values.set(key, value))
 
     def with_members(self, update: Mapping[str, Value]):
