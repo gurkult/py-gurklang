@@ -4,8 +4,8 @@ from operator import itemgetter
 from typing import Iterable, Dict, List, Tuple
 from . import stdlib_modules
 from gurklang.types import *  # type: ignore
-from .builtin_utils import Module, Fail, make_simple
-from .vm_utils import stringify_value
+from .builtin_utils import Module, Fail, make_simple, raw_function
+from .vm_utils import stringify_value, unwrap_stack
 
 module = Module("builtins")
 
@@ -198,56 +198,65 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # <`case` implementation>
 
-def _matches_impl(
-    pattern: Value,
-    value: Value,
-    fail: Fail
-) -> Optional[Tuple[Iterable[Tuple[int, Value]], Dict[str, Value]]]:
-    if isinstance(pattern, Vec) and isinstance(value, Vec):
-        captures: List[Tuple[int, Value]] = []
-        variables: Dict[str, Value] = {}
-        for nested_pattern, nested_value in zip(pattern.values, value.values):
-            matches = _matches_impl(nested_pattern, nested_value, fail)
-            if matches is None:
-                return [], {}
-            new_captures, new_vars = matches
-            if variables.keys() & new_vars.keys():
-                fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
-            captures.extend(new_captures)
-            variables.update(new_vars)
-        return captures, variables
+
+Captures = Optional[Tuple[Iterable[Tuple[int, Value]], Dict[str, Value]]]
+
+
+def _match_with_vec(pattern: Vec, value: Value, fail: Fail) -> Captures:
+    if value.tag != "vec":
+        return None
+    captures: List[Tuple[int, Value]] = []
+    variables: Dict[str, Value] = {}
+    for nested_pattern, nested_value in zip(pattern.values, value.values):
+        matches = _matches_impl(nested_pattern, nested_value, fail)
+        if matches is None:
+            return [], {}
+        new_captures, new_vars = matches
+        if variables.keys() & new_vars.keys():
+            fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
+        captures.extend(new_captures)
+        variables.update(new_vars)
+    return captures, variables
+
+
+def _match_with_atom(pattern: Atom, value: Value, __fail: Fail) -> Captures:
+    label = pattern.value
+    if label == '_':
+        return [], {}
+    elif label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
+        return [], {}
+    elif frozenset(label) == {'.'}:
+        return [(len(label), value)], {}
+    else:
+        return [], {label: Code([Put(value)], closure=None)}
+
+
+def _matches_impl(pattern: Value, value: Value, fail: Fail) -> Captures:
+    if isinstance(pattern, Vec):
+        return _match_with_vec(pattern, value, fail)
     elif isinstance(pattern, Atom):
-        label = pattern.value
-        if label == '_':
-            return [], {}
-        elif label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
-            return [], {}
-        elif frozenset(label) == {'.'}:
-            return [(len(label), value)], {}
-        else:
-            return [], {label: Code([Put(value)], closure=None)}
+        return _match_with_atom(pattern, value, fail)
     elif pattern == value:
         return [], {}
     return None
 
 
 def _matches(pattern: Vec, stack: Stack, fail: Fail) -> Optional[Tuple[Stack, Dict[str, Value]]]:
-    captures: List[Tuple[int, Value]] = []
+    stack_captures: List[Tuple[int, Value]] = []
     variables: Dict[str, Value] = {}
-    original_stack = stack
     for inner_pattern in reversed(pattern.values):
-        top, stack = stack
+        top, stack = stack  # type: ignore
         matches = _matches_impl(inner_pattern, top, fail)
         if matches is None:
             return None
         stack_slots, new_vars = matches
         if new_vars.keys() & variables.keys():
             fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
-        captures.extend(stack_slots)
+        stack_captures.extend(stack_slots)
         variables.update(new_vars)
-    captures.sort(key=itemgetter(0), reverse=True)
+    stack_captures.sort(key=itemgetter(0), reverse=True)
     return (
-        _stack_extend(stack, (el for _, el in reversed(captures))),
+        _stack_extend(stack, (el for _, el in reversed(stack_captures))),
         variables
     )
 
@@ -258,18 +267,29 @@ def _stack_extend(stack: Stack, elems: Iterable[Value]) -> Stack:
     return stack
 
 
-@module.register_simple()
-def __match_case(stack: Stack, scope: Scope, fail: Fail):
+def _parse_cases(stack: Stack, fail: Fail) -> Tuple[Stack, Sequence[Value], Sequence[Value]]:
     sentinel = Atom.make('{case sentinel}')
-    cases = []
-    while not (isinstance(stack[0], Atom) and stack[0].value == sentinel.value):
-        next_elem, stack = stack
-        cases.append(next_elem)
-    if len(cases) % 2 == 1:
+    patterns = []
+    actions = []
+    is_pattern = False
+    while stack[0] is not sentinel: # type: ignore
+        next_elem, stack = stack  # type: ignore
+        (patterns if is_pattern else actions).append(next_elem)
+        is_pattern = not is_pattern
+    if len(patterns) != len(actions):
         fail('odd number of forms in case expression, there must be exactly one function per pattern')
-    for action, pattern in zip(cases[::2], cases[1::2]):
-        if not isinstance(pattern, Vec):
+    return stack, patterns, actions
+
+
+@make_simple()
+def __match_case(stack: Stack, scope: Scope, fail: Fail):
+    stack, patterns, actions = _parse_cases(stack, fail)
+    for pattern, action in zip(patterns, actions):
+        if pattern.tag != "vec":
             fail(f'a pattern must be a vector, not {pattern!r}')
+
+        if action.tag != "code":
+            fail(f'an action must be code, not {action!r}')
 
         matched = _matches(pattern, stack[1], fail)
         if matched is None:
@@ -278,13 +298,13 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
         new_stack, new_variables = matched
         insns = list(action.instructions)
         for k, v in new_variables.items():
-            insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), Put(var), CallByValue]
+            insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), Put(var), CallByValue()]
         action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
         return (action, new_stack), scope
     return stack, scope
 
 
-@module.register_simple()
+@make_simple()
 def __get_case(stack: T[V, S], scope: Scope, fail: Fail):
     sentinel = Atom.make('{case sentinel}')
     fun, rest = stack
@@ -293,11 +313,9 @@ def __get_case(stack: T[V, S], scope: Scope, fail: Fail):
 
 module.add(
     'case',
-    Code(
-        [CallByName('--get-case'), CallByValue(), CallByName('--match-case'), CallByValue()],
-        name='case',
-        closure=None,
-        flags=CodeFlags.PARENT_SCOPE
+    raw_function(
+        Put(__get_case), CallByValue(), CallByValue(), Put(__match_case), CallByValue(), CallByValue(),
+        name="case"
     )
 )
 
