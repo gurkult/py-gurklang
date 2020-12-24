@@ -1,10 +1,11 @@
 import dataclasses
 import time
 from operator import itemgetter
-from typing import Iterable, Dict, List, Tuple
-from . import stdlib_modules
+from typing import Iterable, List
+
 from gurklang.types import *  # type: ignore
-from .builtin_utils import Module, Fail, make_function, make_function
+from . import stdlib_modules
+from .builtin_utils import Module, Fail, make_function
 from .vm_utils import stringify_value
 
 module = Module("builtins")
@@ -12,6 +13,8 @@ module = Module("builtins")
 # Shortcuts for brevity
 T, V, S = Tuple, Value, Stack
 
+
+# <`stack` functions>
 
 @module.register()
 def dup(stack: T[V, S], scope: Scope, fail: Fail):
@@ -32,10 +35,84 @@ def swap(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 
 @module.register()
-def rot3(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
-    (z, (y, (x, rest))) = stack
-    return (x, (y, (z, rest))), scope
+def tuck(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (x, (y, rest)) = stack
+    return (y, (x, (y, rest))), scope
 
+
+@module.register()
+def rot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
+    (z, (y, (x, rest))) = stack
+    return (y, (x, (z, rest))), scope
+
+
+@module.register()
+def unrot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
+    (z, (y, (x, rest))) = stack
+    return (x, (z, (y, rest))), scope
+
+
+@module.register()
+def nip(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    return (y, rest), scope
+
+
+@module.register()
+def over(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    return (x, (y, (x, rest))), scope
+
+
+@module.register('2dup')
+def two_dup(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    y, (x, rest) = stack
+    return (y, (x, (y, (x, rest)))), scope
+
+
+@module.register('2drop')
+def two_drop(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (x, rest) = stack
+    return rest[1], scope
+
+
+@module.register('2swap')
+def two_swap(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, rest)))), scope
+
+
+@module.register('2tuck')
+def two_tuck(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, (c, (d, rest)))))), scope
+
+
+@module.register('2rot')
+def two_rot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, (e, (f, rest)))))) = stack
+    return (c, (d, (e, (f, (a, (b, rest)))))), scope
+
+
+@module.register('2unrot')
+def two_unrot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, (e, (f, rest)))))) = stack
+    return (e, (f, (a, (b, (c, (d, rest)))))), scope
+
+
+@module.register('2nip')
+def two_nip(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (_, (_, rest)))) = stack
+    return (a, (b, rest)), scope
+
+
+@module.register('2over')
+def two_over(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, (c, (d, rest)))))), scope
+
+
+# </`stack` functions>
 
 @module.register()
 def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
@@ -274,7 +351,8 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
             insns = list(action.instructions)
             for k, v in new_variables.items():
                 insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), CallByName('var')]
-            action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
+            action = Code(instructions=insns, closure=action.closure, flags=action.flags,
+                          source_code=action.source_code)
             return (action, new_stack), scope
     return stack, scope
 
