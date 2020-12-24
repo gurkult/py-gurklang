@@ -1,20 +1,6 @@
 from pytest import raises
 
-import gurklang.vm as vm
-from gurklang.parser import parse
-from gurklang.types import Int
-
-
-def run(code):
-    stack, _ = vm.run(parse(code))
-    return stack
-
-
-def number_stack(*args):
-    stack = None
-    for arg in args:
-        stack = Int(arg), stack
-    return stack
+from .test_examples import run, number_stack
 
 
 def test_case_value_match():
