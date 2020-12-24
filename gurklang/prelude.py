@@ -2,11 +2,9 @@ import dataclasses
 import time
 from operator import itemgetter
 from typing import Iterable, Dict, List, Tuple
-
-from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, \
-    NativeFunction, Vec
 from . import stdlib_modules
-from .builtin_utils import Module, Fail, make_function
+from gurklang.types import *  # type: ignore
+from .builtin_utils import Module, Fail, make_function, make_function
 from .vm_utils import stringify_value
 
 module = Module("builtins")
