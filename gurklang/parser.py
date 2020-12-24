@@ -1,4 +1,4 @@
-from typing import Iterator, List
+from typing import Any, Iterator, List, Generator, Tuple
 from gurklang.parser_utils import build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
@@ -13,8 +13,8 @@ tokenizer = build_tokenizer(
         ("LBR", r"\{"),
         ("RBR", r"\}"),
         ("INT", r"[+-]\d+"),
-        ("STR_D", r'"(?:\\.|[^"])+"'),
-        ("STR_S", r"'(?:\\.|[^'])+'"),
+        ("STR_D", r'"(?:\\.|[^"])*"'),
+        ("STR_S", r"'(?:\\.|[^'])*'"),
         ("ATOM", r"\:[^\"'(){}# \n\t]+"),
         ("NAME", r"[^\"'(){}# \n\t]+"),
     ),
@@ -31,11 +31,24 @@ tokenizer = build_tokenizer(
 Token = tokenizer.token_type
 
 
+class ParseError(Exception):
+    def __init__(self, source: str, while_parsing_what: str, token: Token):
+        self.source = source
+        self.while_parsing_what = while_parsing_what
+        self.token = token
+        super().__init__(token)
+
+    def is_eof(self):
+        # This is related to the RBR } hack in the `parse` function
+        return self.token.position == len(self.source)
+
+
+
 def _lex(source: str) -> Iterator[Token]:
     return tokenizer.tokenize(source)
 
 
-def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
+def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
     n = 0
     for token in token_stream:
         if token.name == "RPAR":
@@ -47,31 +60,48 @@ def _parse_vec(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield Put(Atom.make(token.value))
         elif token.name == "ATOM":
             yield Put(Atom.make(":" + token.value))
+        elif token.name == "LPAR":
+            yield from _parse_vec(source, token_stream)
         elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))
         elif token.name == "LBR":
-            yield PutCode(list(_parse_codeblock(token_stream)))
+            yield PutCode(list(_parse_codeblock(source, token_stream)))
         else:
-            raise ValueError(token)
+            raise ParseError(source, "a tuple literal", token)
 
         n += 1
     else:
-        raise ValueError(token)  # type: ignore
+        raise ParseError(source, "a tuple literal", token)  # type: ignore
     yield MakeVec(n)
 
 
-def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
+def _collect(gen):
+    rv: Any = None
+    def helper_generator():
+        nonlocal rv
+        rv = yield from gen
+    elements = list(helper_generator())
+    return (rv, elements)
+
+
+def _parse_codeblock(
+    source: str,
+    token_stream: Iterator[Token]
+) -> Generator[Instruction, None, Tuple[int, int]]:
     for token in token_stream:
         if token.name == "RBR":
-            break
+            return token.span
 
         elif token.name == "LBR":
             # put_code is distinct from put, because the runtime
             # will attach a closure to the code
-            yield PutCode(list(_parse_codeblock(token_stream)))
+
+            (_, end_pos), elements = _collect(_parse_codeblock(source, token_stream))
+
+            yield PutCode(elements, source_code=source[token.position:end_pos])
 
         elif token.name == "LPAR":
-            yield from _parse_vec(token_stream)
+            yield from _parse_vec(source, token_stream)
 
         elif token.name == "INT":
             yield Put(Int(int(token.value)))
@@ -86,17 +116,17 @@ def _parse_codeblock(token_stream: Iterator[Token]) -> Iterator[Instruction]:
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
-            raise ValueError(token)
+            raise ParseError(source, "a code literal", token)
     else:
-        raise ValueError(token)  # type: ignore
+        raise ParseError(source, "a code literal", token)  # type: ignore
 
 
-def _parse_stream(token_stream: Iterator[Token], length: int) -> Iterator[Instruction]:
-    return _parse_codeblock(itertools.chain(
+def _parse_stream(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
+    return _parse_codeblock(source, itertools.chain(
         token_stream,
-        [Token("RBR", "}", length)],
+        [Token("RBR", "}", len(source))],
     ))
 
 
 def parse(source: str) -> List[Instruction]:
-    return list(_parse_stream(_lex(source), len(source)))
+    return list(_parse_stream(source, _lex(source)))

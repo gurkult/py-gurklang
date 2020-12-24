@@ -5,9 +5,8 @@ import time
 import dataclasses
 from typing import Iterable, Dict, List, Tuple
 from . import stdlib_modules
-from gurklang.types import CallByValue, CodeFlags, Scope, Stack, Put, CallByName, Value, Atom, Str, Code, \
-    NativeFunction, Vec
-from .builtin_utils import Module, Fail
+from gurklang.types import *  # type: ignore
+from .builtin_utils import Module, Fail, make_function, make_function
 from .vm_utils import stringify_value
 
 module = Module("builtins")
@@ -48,8 +47,13 @@ def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (code, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
+
     if code.tag not in ["code", "native"]:
         fail(f"{code} is not code")
+
+    if code.tag == "code":
+        code = code.with_name(identifier.value)
+
     return rest, scope.with_member(identifier.value, code)
 
 
@@ -61,7 +65,7 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (value, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
-    fn = Code([Put(value)], closure=scope)
+    fn = Code([Put(value)], name=identifier.value, closure=scope)
     return rest, scope.with_member(identifier.value, fn)
 
 
@@ -81,6 +85,20 @@ def print_string(stack: T[V, S], scope: Scope, fail: Fail):
         fail(f"{head} is not a string")
     print(head.value, end="", flush=True)
     return rest, scope
+
+
+@module.register("input")
+def input_(stack: Stack, scope: Scope, fail: Fail):
+    return (Str(input()), stack), scope
+
+
+@module.register()
+def prompt(stack: T[V, S], scope: Scope, fail: Fail):
+    (head, rest) = stack
+    if head.tag != "str":
+        fail(f"{head} is not a string")
+    text = Str(input(f"{head.value} "))
+    return (text, stack), scope
 
 
 @module.register()
@@ -112,18 +130,53 @@ def str_(stack: T[V, S], scope: Scope, fail: Fail):
     return (representation, rest), scope
 
 
-module.add("!", Code([CallByValue()], closure=None, flags=CodeFlags.PARENT_SCOPE))
+module.add("!", Code([CallByValue()], closure=None, name="!", flags=CodeFlags.PARENT_SCOPE))
 
 
 @module.register("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (else_, (then, (condition, rest))) = stack
-    if condition == Atom.make("true"):
+    if condition is Atom.make("true"):
         return (then, rest), scope
-    elif condition == Atom.make("false"):
+    elif condition is Atom.make("false"):
         return (else_, rest), scope
     else:
         fail(f"{condition} is not a boolean (:true/:false)")
+
+
+# <`,` implementation>
+@make_function()
+def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
+    (fn, rest) = stack
+    if fn.tag not in ["code", "native"]:
+        fail(f"{fn} is not a function")
+    sentinel = Atom.make("{, sentinel}")
+    instructions = [Put(sentinel), Put(fn), CallByValue()]
+    code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--spreader")
+    return (code, rest), scope
+
+@make_function()
+def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
+    head, stack = stack  # type: ignore
+    sentinel = Atom.make("{, sentinel}")
+    elements = []
+    while head is not sentinel:
+        elements.append(head)
+        head, stack = stack  # type: ignore
+    elements.reverse()
+    return (Vec(elements), stack), scope
+
+module.add(
+    ",",
+    Code(
+        [Put(__spread_vec), CallByValue(), CallByValue(), Put(__collect_vec),CallByValue()],
+        closure=None,
+        flags=CodeFlags.PARENT_SCOPE,
+        name=",",
+        source_code="{ --spread-vec ! --collect-vec }"
+    )
+)
+# </`,` implementation>
 
 
 @module.register()
@@ -131,9 +184,9 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (function, (value, rest)) = stack
 
     if function.tag == "code":
-        rv = Code([Put(value), *function.instructions], closure=function.closure, flags=function.flags)
+        rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name, flags=function.flags)
     elif function.tag == "native":
-        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc))  # type: ignore
+        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc), function.name)  # type: ignore
     else:
         fail(f"{function} is not a function")
 
@@ -225,7 +278,7 @@ def case(stack: T[V, S], scope: Scope, fail: Fail):
 
 # <`import` implementation>
 
-def _make_name_getter(lookup: Dict[str, Value]):
+def _make_name_getter(lookup: Dict[str, Value], name: str):
     def name_getter(stack: Stack, scope: Scope):
         if stack is None:
             raise RuntimeError("module getter on an empty stack")
@@ -239,7 +292,7 @@ def _make_name_getter(lookup: Dict[str, Value]):
 
         function = lookup[name.value]
         return (function, rest), scope
-    return Code([Put(NativeFunction(name_getter)),  CallByValue()], None, CodeFlags.PARENT_SCOPE)
+    return Code([Put(NativeFunction(name_getter, name)),  CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
 
 def _import_all(scope: Scope, module: Module):
@@ -247,7 +300,7 @@ def _import_all(scope: Scope, module: Module):
 
 
 def _import_qualified(scope: Scope, module: Module, target_name: str):
-    return {target_name: _make_name_getter(module.members)}
+    return {target_name: _make_name_getter(module.members, target_name)}
 
 
 def _import_prefixed(scope: Scope, module: Module, prefix: str):
@@ -259,13 +312,13 @@ def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
 
 
 def _get_imported_members(scope: Scope, module: Module, import_options: Value):
-    if import_options == Atom.make("all"):
+    if import_options is Atom.make("all"):
         return _import_all(scope, module)
 
-    elif import_options == Atom.make("qual"):
+    elif import_options is Atom.make("qual"):
         return _import_qualified(scope, module, module.name)
 
-    elif import_options == Atom.make("prefix"):
+    elif import_options is Atom.make("prefix"):
         return _import_prefixed(scope, module, module.name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("as:"):
@@ -310,5 +363,5 @@ def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 # </`import` implementation>
 
-module.add("print", Code([CallByName("str"), CallByName("print-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))
-module.add("println", Code([CallByName("str"), CallByName("println-string")], closure=None, flags=CodeFlags.PARENT_SCOPE))
+module.add("print", Code([CallByName("str"), CallByName("print-string")], closure=None, name="print", flags=CodeFlags.PARENT_SCOPE))
+module.add("println", Code([CallByName("str"), CallByName("println-string")], closure=None, name="println", flags=CodeFlags.PARENT_SCOPE))

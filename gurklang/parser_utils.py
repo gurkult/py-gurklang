@@ -7,11 +7,15 @@ from typing import Callable, Collection, Generic, Iterable, Iterator, Optional, 
 TokenName = TypeVar("TokenName", bound=str)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Token(Generic[TokenName]):
     name: TokenName
     value: str
     position: int
+
+    @property
+    def span(self) -> Tuple[int, int]:
+        return (self.position, self.position + len(self.value))
 
 
 @dataclass
