@@ -171,8 +171,16 @@ parent-scope
 fib forever
 """
 
+source12 = R"""
+:math (* -) import
+{ { (. .) { dup 1 - rot3 * swap n! }
+    (1) {}
+  } case
+} :n! jar
+1 10 n!
+"""
 
-stack, scope = vm.run(parse(source11))
+stack, scope = vm.run(parse(source12))
 
 print("\n----------------")
 print("Resulting stack:")
