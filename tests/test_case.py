@@ -73,6 +73,15 @@ def test_case_parent_scope():
     assert run('10 { (a) {} parent-scope } parent-scope case a') == number_stack(10)
 
 
+def test_case_ignore():
+    assert run('1 2 3 4 5 {(_ _ .. . .) {}}case') == number_stack(4, 5, 3)
+
+
+def test_case_ignore_does_not_bind():
+    with raises(KeyError):
+        run('1 {(_) {}} case _')
+
+
 def test_case_no_leak_of_variables():
     with raises(KeyError):
         run('10 { (a) {}} case a')

@@ -217,7 +217,9 @@ def _matches_impl(
         return True, captures, variables
     elif isinstance(pattern, Atom):
         label = pattern.value
-        if label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
+        if label == '_':
+            return True, [], {}
+        elif label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
             return True, [], {}
         elif frozenset(label) == {'.'}:
             return True, [(len(label), value)], {}
