@@ -278,6 +278,8 @@ def _parse_cases(stack: Stack, fail: Fail) -> Tuple[Stack, Sequence[Value], Sequ
         is_pattern = not is_pattern
     if len(patterns) != len(actions):
         fail('odd number of forms in case expression, there must be exactly one function per pattern')
+    patterns.reverse()
+    actions.reverse()
     return stack, patterns, actions
 
 
