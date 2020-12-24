@@ -9,7 +9,7 @@ T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 
-@module.register()
+@module.register_simple()
 def stack_repr(stack: T[V, S], scope: Scope, fail: Fail):
     (depth, rest) = stack
     if depth.tag != "int":

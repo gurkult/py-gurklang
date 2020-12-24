@@ -4,7 +4,7 @@ from gurklang.types import Int
 
 
 def run(code):
-    stack, _ = vm.run(parse(code))
+    stack = vm.run(parse(code)).stack
     return stack
 
 

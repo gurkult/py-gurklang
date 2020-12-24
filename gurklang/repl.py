@@ -150,11 +150,11 @@ class Repl:
     last_traceback: Optional[Tuple[Any, Any, Any]]
 
     def __init__(self, prelude: str = DEFAULT_PRELUDE):
-        stack, scope = run([])
-        scope = make_scope(scope)  # we need to make our own scope not to change builtins
-        stack, scope = call(stack, scope, code(prelude))
-        self.stack = stack
-        self.scope = scope
+        state = run([])
+        local_scope = make_scope(state.scope)
+        state = state.with_scope(local_scope)
+        state = call(state, code(prelude))
+        self.state = state
         self.last_traceback = None
         self.sniper = StdoutSniper(
             sys.stdout,
@@ -184,7 +184,7 @@ class Repl:
     def _process_code(self, source_code: str):
         self.sniper.watch()
         try:
-            self.stack, self.scope = call(self.stack, self.scope, code(source_code))
+            self.state = call(self.state, code(source_code))
         except ParseError as e:
             _display_parse_error(e)
         except KeyboardInterrupt as e:
@@ -238,13 +238,13 @@ class Repl:
     # Interacting with configuration:
 
     def _run_code_for_side_effect(self, source_code: str):
-        call(self.stack, self.scope, code(source_code))
+        call(self.state, code(source_code))
 
     def _run_code_for_single_value(self, source_code: str) -> Value:
-        stack, _scope = call(self.stack, self.scope, code(source_code))
-        if stack is None:
+        state = call(self.state, code(source_code))
+        if state.stack is None:
             raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
-        (head, _rest) = stack
+        (head, _rest) = state.stack
         return head
 
     def _get_str_config_value(self, label: str) -> str:

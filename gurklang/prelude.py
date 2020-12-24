@@ -5,7 +5,7 @@ from typing import Iterable, List
 
 from gurklang.types import *  # type: ignore
 from . import stdlib_modules
-from .builtin_utils import Module, Fail, make_function
+from .builtin_utils import Module, Fail, make_simple
 from .vm_utils import stringify_value
 
 module = Module("builtins")
@@ -16,97 +16,97 @@ T, V, S = Tuple, Value, Stack
 
 # <`stack` functions>
 
-@module.register()
+@module.register_simple()
 def dup(stack: T[V, S], scope: Scope, fail: Fail):
     (x, rest) = stack
     return (x, (x, rest)), scope
 
 
-@module.register()
+@module.register_simple()
 def drop(stack: T[V, S], scope: Scope, fail: Fail):
     (x, rest) = stack
     return rest, scope
 
 
-@module.register()
+@module.register_simple()
 def swap(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (x, (y, rest)) = stack
     return (y, (x, rest)), scope
 
 
-@module.register()
+@module.register_simple()
 def tuck(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (x, (y, rest)) = stack
     return (y, (x, (y, rest))), scope
 
 
-@module.register()
+@module.register_simple()
 def rot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (z, (y, (x, rest))) = stack
     return (y, (x, (z, rest))), scope
 
 
-@module.register()
+@module.register_simple()
 def unrot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (z, (y, (x, rest))) = stack
     return (x, (z, (y, rest))), scope
 
 
-@module.register()
+@module.register_simple()
 def nip(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     return (y, rest), scope
 
 
-@module.register()
+@module.register_simple()
 def over(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     return (x, (y, (x, rest))), scope
 
 
-@module.register('2dup')
+@module.register_simple('2dup')
 def two_dup(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     y, (x, rest) = stack
     return (y, (x, (y, (x, rest)))), scope
 
 
-@module.register('2drop')
+@module.register_simple('2drop')
 def two_drop(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (x, rest) = stack
     return rest[1], scope
 
 
-@module.register('2swap')
+@module.register_simple('2swap')
 def two_swap(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
     (a, (b, (c, (d, rest)))) = stack
     return (c, (d, (a, (b, rest)))), scope
 
 
-@module.register('2tuck')
+@module.register_simple('2tuck')
 def two_tuck(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
     (a, (b, (c, (d, rest)))) = stack
     return (c, (d, (a, (b, (c, (d, rest)))))), scope
 
 
-@module.register('2rot')
+@module.register_simple('2rot')
 def two_rot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
     (a, (b, (c, (d, (e, (f, rest)))))) = stack
     return (c, (d, (e, (f, (a, (b, rest)))))), scope
 
 
-@module.register('2unrot')
+@module.register_simple('2unrot')
 def two_unrot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
     (a, (b, (c, (d, (e, (f, rest)))))) = stack
     return (e, (f, (a, (b, (c, (d, rest)))))), scope
 
 
-@module.register('2nip')
+@module.register_simple('2nip')
 def two_nip(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
     (a, (b, (_, (_, rest)))) = stack
     return (a, (b, rest)), scope
 
 
-@module.register('2over')
+@module.register_simple('2over')
 def two_over(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
     (a, (b, (c, (d, rest)))) = stack
     return (c, (d, (a, (b, (c, (d, rest)))))), scope
@@ -114,7 +114,7 @@ def two_over(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
 
 # </`stack` functions>
 
-@module.register()
+@module.register_simple()
 def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     """
     Store a function by a name
@@ -132,7 +132,7 @@ def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return rest, scope.with_member(identifier.value, code)
 
 
-@module.register()
+@module.register_simple()
 def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     """
     Store a value by a name
@@ -144,7 +144,7 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return rest, scope.with_member(identifier.value, fn)
 
 
-@module.register()
+@module.register_simple()
 def println_string(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     if head.tag != "str":
@@ -153,7 +153,7 @@ def println_string(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
-@module.register()
+@module.register_simple()
 def print_string(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     if head.tag != "str":
@@ -162,12 +162,12 @@ def print_string(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
-@module.register("input")
+@module.register_simple("input")
 def input_(stack: Stack, scope: Scope, fail: Fail):
     return (Str(input()), stack), scope
 
 
-@module.register()
+@module.register_simple()
 def prompt(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     if head.tag != "str":
@@ -176,7 +176,7 @@ def prompt(stack: T[V, S], scope: Scope, fail: Fail):
     return (text, stack), scope
 
 
-@module.register()
+@module.register_simple()
 def sleep(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
     if head.tag == "int":
@@ -189,7 +189,7 @@ def sleep(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
-@module.register()
+@module.register_simple()
 def parent_scope(stack: T[V, S], scope: Scope, fail: Fail):
     (code, rest) = stack
     if code.tag != "code":
@@ -198,7 +198,7 @@ def parent_scope(stack: T[V, S], scope: Scope, fail: Fail):
     return (new_code, rest), scope
 
 
-@module.register("str")
+@module.register_simple("str")
 def str_(stack: T[V, S], scope: Scope, fail: Fail):
     (x, rest) = stack
     representation = Str(stringify_value(x))
@@ -208,7 +208,7 @@ def str_(stack: T[V, S], scope: Scope, fail: Fail):
 module.add("!", Code([CallByValue()], closure=None, name="!", flags=CodeFlags.PARENT_SCOPE))
 
 
-@module.register("if")
+@module.register_simple("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (else_, (then, (condition, rest))) = stack
     if condition is Atom.make("true"):
@@ -220,7 +220,7 @@ def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
 
 
 # <`,` implementation>
-@make_function()
+@make_simple()
 def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
     (fn, rest) = stack
     if fn.tag not in ["code", "native"]:
@@ -231,7 +231,7 @@ def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
     return (code, rest), scope
 
 
-@make_function()
+@make_simple()
 def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
     head, stack = stack  # type: ignore
     sentinel = Atom.make("{, sentinel}")
@@ -258,7 +258,7 @@ module.add(
 # </`,` implementation>
 
 
-@module.register()
+@module.register_simple()
 def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (function, (value, rest)) = stack
 
@@ -266,7 +266,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name,
                   flags=function.flags)
     elif function.tag == "native":
-        rv = NativeFunction(lambda st, sc: function.fn((value, st), sc), function.name)  # type: ignore
+        rv = NativeFunction(lambda state: function.fn(State.add(value)), function.name)  # type: ignore
     else:
         fail(f"{function} is not a function")
 
@@ -334,7 +334,7 @@ def _stack_extend(stack: Stack, elems: Iterable[Value]) -> Stack:
     return stack
 
 
-@module.register()
+@module.register_simple()
 def __match_case(stack: Stack, scope: Scope, fail: Fail):
     sentinel = Atom.make('{case sentinel}')
     cases = []
@@ -357,7 +357,7 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
     return stack, scope
 
 
-@module.register()
+@module.register_simple()
 def __get_case(stack: T[V, S], scope: Scope, fail: Fail):
     sentinel = Atom.make('{case sentinel}')
     fun, rest = stack
@@ -380,10 +380,10 @@ module.add(
 # <`import` implementation>
 
 def _make_name_getter(lookup: Dict[str, Value], name: str):
-    def name_getter(stack: Stack, scope: Scope):
-        if stack is None:
+    def name_getter(state: State):
+        if state.stack is None:
             raise RuntimeError("module getter on an empty stack")
-        (name, rest) = stack
+        (name, rest) = state.stack
 
         if name.tag not in ["atom", "str"]:
             raise RuntimeError(f"member name has to be an atom or a string, got: {name}")
@@ -392,7 +392,7 @@ def _make_name_getter(lookup: Dict[str, Value], name: str):
             raise LookupError(f"member {name.value} not found")
 
         function = lookup[name.value]
-        return (function, rest), scope
+        return State((function, rest), state.scope)
 
     return Code([Put(NativeFunction(name_getter, name)), CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
@@ -439,7 +439,7 @@ def _get_imported_members(scope: Scope, module: Module, import_options: Value):
         return None
 
 
-@module.register("import")
+@module.register_simple("import")
 def import_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (import_options, (identifier, rest)) = stack
 
