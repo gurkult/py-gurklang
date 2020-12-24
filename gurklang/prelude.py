@@ -199,53 +199,54 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 # <`case` implementation>
 
 def _matches_impl(
-        pattern: Value,
-        value: Value,
-        fail: Fail
-) -> Tuple[bool, Iterable[Tuple[int, Value]], Dict[str, Value]]:
+    pattern: Value,
+    value: Value,
+    fail: Fail
+) -> Optional[Tuple[Iterable[Tuple[int, Value]], Dict[str, Value]]]:
     if isinstance(pattern, Vec) and isinstance(value, Vec):
-        captures: List[tuple[int, Value]] = []
+        captures: List[Tuple[int, Value]] = []
         variables: Dict[str, Value] = {}
         for nested_pattern, nested_value in zip(pattern.values, value.values):
-            matches, new_captures, new_variables = _matches_impl(nested_pattern, nested_value, fail)
-            if not matches:
-                return False, [], {}
-            if variables.keys() & new_variables.keys():
-                fail(f'duplicate variable name in pattern: {variables.keys() & new_variables.keys()!r}')
+            matches = _matches_impl(nested_pattern, nested_value, fail)
+            if matches is None:
+                return [], {}
+            new_captures, new_vars = matches
+            if variables.keys() & new_vars.keys():
+                fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
             captures.extend(new_captures)
-            variables.update(new_variables)
-        return True, captures, variables
+            variables.update(new_vars)
+        return captures, variables
     elif isinstance(pattern, Atom):
         label = pattern.value
         if label == '_':
-            return True, [], {}
+            return [], {}
         elif label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
-            return True, [], {}
+            return [], {}
         elif frozenset(label) == {'.'}:
-            return True, [(len(label), value)], {}
+            return [(len(label), value)], {}
         else:
-            return True, [], {label: Code([Put(value)], closure=None)}
+            return [], {label: Code([Put(value)], closure=None)}
     elif pattern == value:
-        return True, [], {}
-    return False, [], {}
+        return [], {}
+    return None
 
 
-def _matches(pattern: Vec, stack: Stack, fail: Fail) -> Tuple[bool, Stack, Dict[str, Value]]:
+def _matches(pattern: Vec, stack: Stack, fail: Fail) -> Optional[Tuple[Stack, Dict[str, Value]]]:
     captures: List[Tuple[int, Value]] = []
     variables: Dict[str, Value] = {}
     original_stack = stack
     for inner_pattern in reversed(pattern.values):
         top, stack = stack
-        matches, stack_slots, new_vars = _matches_impl(inner_pattern, top, fail)
-        if not matches:
-            return False, original_stack, {}
+        matches = _matches_impl(inner_pattern, top, fail)
+        if matches is None:
+            return None
+        stack_slots, new_vars = matches
         if new_vars.keys() & variables.keys():
             fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
         captures.extend(stack_slots)
         variables.update(new_vars)
     captures.sort(key=itemgetter(0), reverse=True)
     return (
-        True,
         _stack_extend(stack, (el for _, el in reversed(captures))),
         variables
     )
@@ -269,13 +270,17 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
     for action, pattern in zip(cases[::2], cases[1::2]):
         if not isinstance(pattern, Vec):
             fail(f'a pattern must be a vector, not {pattern!r}')
-        matched, new_stack, new_variables = _matches(pattern, stack[1], fail)
-        if matched:
-            insns = list(action.instructions)
-            for k, v in new_variables.items():
-                insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), CallByName('var')]
-            action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
-            return (action, new_stack), scope
+
+        matched = _matches(pattern, stack[1], fail)
+        if matched is None:
+            continue
+
+        new_stack, new_variables = matched
+        insns = list(action.instructions)
+        for k, v in new_variables.items():
+            insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), Put(var), CallByValue]
+        action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
+        return (action, new_stack), scope
     return stack, scope
 
 
