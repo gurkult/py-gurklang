@@ -5,7 +5,7 @@ try:
     from typing_extensions import Literal
 except ImportError:
     from typing import Literal
-from typing import Any, Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
+from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass, field, replace as dataclass_replace
 
 
@@ -173,13 +173,4 @@ class NativeFunction:
     name: str = "λ"
     tag: ClassVar[Literal["native"]] = "native"
 
-
-@dataclass
-class NativeObject:
-    """Some internal object """
-    kind: Atom
-    obj: Any
-    tag: ClassVar[Literal["native_obj"]] = "native_obj"
-
-
-Value = Union[Atom, Str, Int, Vec, Code, NativeFunction, NativeObject]
+Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
