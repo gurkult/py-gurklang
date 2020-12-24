@@ -1,3 +1,5 @@
+from typing import List
+from gurklang.types import Atom, Instruction, Int, Stack, Value
 import pprint
 import gurklang.vm as vm
 from gurklang.vm_utils import repr_stack
@@ -121,7 +123,55 @@ source9 = R"""
 """
 
 
-stack, scope = vm.run(parse(source8))
+source10 = R"""
+:math ( +       ) import
+:coro ( iterate ) import
+
+{ dup println 1 + } (1 ())
+iterate
+iterate
+iterate
+iterate
+
+"""
+
+
+source11 = R"""
+:math ( +       ) import
+:coro ( iterate ) import
+
+#########################################
+
+{ swap parent-scope swap jar }
+parent-scope :pjar jar
+
+#########################################
+
+{ { } parent-scope close close }
+:--make-generator pjar
+
+{ rot3 swap --make-generator swap jar }
+:generator pjar
+
+{ iterate forever }
+:forever pjar
+
+#########################################
+
+{
+  swap dup
+  println
+  (1 100) sleep
+  swap dup rot3 +
+}
+parent-scope
+(1 (1 ()))
+:fib generator
+
+fib forever
+"""
+
+stack, scope = vm.run(parse(source11))
 
 print("\n----------------")
 print("Resulting stack:")

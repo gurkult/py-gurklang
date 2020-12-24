@@ -1,3 +1,5 @@
+from pytest import raises
+
 import gurklang.vm as vm
 from gurklang.parser import parse
 from gurklang.types import Int
@@ -45,10 +47,40 @@ def test_case_named_capture():
     assert run('1 {(a) {a}} case') == number_stack(1)
 
 
+def test_case_in_recursive_function():
+    assert run("""
+    :math( * - ) import
+    { { (a n) { a n * n 1 - n! }
+        (1) {}
+      } case
+    } :n! jar
+    1 6 n!
+    """) == number_stack(720)
+
+
+def test_case_does_not_recursion_error():
+    assert run("""
+    :math( * - ) import
+    { { () { 1 - f }
+        (1) {11}
+      } case
+    } :f jar
+    3000 f
+    """) == number_stack(11)
+
+
+def test_case_parent_scope():
+    assert run('10 { (a) {} parent-scope } parent-scope case a') == number_stack(10)
+
+
+def test_case_no_leak_of_variables():
+    with raises(KeyError):
+        run('10 { (a) {}} case a')
+
+
 def test_case_atom_match():
-    assert run(':rect {(:rect) {4}} case') == number_stack(4)
+    assert run(' :rect {(:rect) {4}} case') == number_stack(4)
 
 
 def test_case_tuple_match():
-    """impossible until the parser allows nested tuples"""
-    assert True
+    assert run(':math (*) import (rect 10 10) {((:rect . .)) { * } } case') == number_stack(100)

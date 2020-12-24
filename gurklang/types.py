@@ -5,8 +5,8 @@ try:
     from typing_extensions import Literal
 except ImportError:
     from typing import Literal
-from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import Any, Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
+from dataclasses import dataclass, field, replace as dataclass_replace
 
 
 @dataclass(frozen=True, repr=False)
@@ -66,6 +66,7 @@ class Put:
 class PutCode:
     """Create a closure and put a code value on top of the stack"""
     value: Sequence[Instruction]
+    source_code: Optional[str] = None
     tag: ClassVar[Literal["put_code"]] = "put_code"
 
 @dataclass(frozen=True)
@@ -116,12 +117,17 @@ class Atom:
     Atoms are cached and compared by identity.
     """
     value: str
+    _original: bool = False
     tag: ClassVar[Literal["atom"]] = "atom"
+
+    def __post_init__(self):
+        if not self._original:
+            raise RuntimeError(f"Atoms must be acquired via the `Atom.make` method")
 
     @staticmethod
     def make(name: str) -> Atom:
         if name not in _atom_cache:
-            _atom_cache[name] = Atom(name)
+            _atom_cache[name] = Atom(name, True)
         return _atom_cache[name]
 
 
@@ -153,12 +159,27 @@ class Code:
     instructions: Sequence[Instruction]
     closure: Optional[Scope]
     flags: CodeFlags = CodeFlags.EMPTY
+    name: str = "λ"
+    source_code: Optional[str] = None
     tag: ClassVar[Literal["code"]] = "code"
+
+    def with_name(self, name: str) -> Code:
+        return dataclass_replace(self, name=name)
 
 @dataclass
 class NativeFunction:
     """A function implemented in Python, like `if` or `+`"""
     fn: Callable[[Stack, Scope], Tuple[Stack, Scope]]
+    name: str = "λ"
     tag: ClassVar[Literal["native"]] = "native"
 
-Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
+
+@dataclass
+class NativeObject:
+    """Some internal object """
+    kind: Atom
+    obj: Any
+    tag: ClassVar[Literal["native_obj"]] = "native_obj"
+
+
+Value = Union[Atom, Str, Int, Vec, Code, NativeFunction, NativeObject]

@@ -1,5 +1,5 @@
 from immutables import Map
-from typing import Optional, Union, Tuple
+from typing import Callable, Optional, Union, Tuple
 from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
@@ -60,6 +60,47 @@ def call(stack: Stack, scope: Scope, function: Union[Code, NativeFunction]) -> T
     return stack, scope
 
 
+def call_with_middleware(
+    stack: Stack,
+    scope: Scope,
+    function: Union[Code, NativeFunction],
+    middleware: Callable[[Instruction, Stack, Stack], None],
+) -> Tuple[Stack, Scope]:
+    """
+    Stackless implementation of calling a function.
+
+    Instructions are piped into a deque, from which they're popped
+    and executed one by one.
+    """
+    pipe: "deque[Instruction]" = deque()
+
+    _load_function(scope, pipe, function)
+
+    while pipe:
+        instruction = pipe.pop()
+
+        if instruction.tag == "call":
+            pipe.append(CallByValue())
+            pipe.append(Put(scope[instruction.function_name]))
+        elif instruction.tag == "call_by_value":
+            (function, new_stack) = stack  # type: ignore
+            middleware(instruction, stack, new_stack)
+            stack = new_stack
+            if function.tag == "code":
+                _load_function(scope, pipe, function)
+            else:
+                new_stack, scope = function.fn(stack, scope)
+                middleware(instruction, stack, new_stack)
+                stack = new_stack
+        else:
+            new_stack, scope = execute(stack, scope, instruction)
+            middleware(instruction, stack, new_stack)
+            stack = new_stack
+
+    return stack, scope
+
+
+
 def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack, Scope]:
     """
     Execute an instruction and return new state of the system.
@@ -70,7 +111,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack
         return (instruction.value, stack), scope
 
     elif instruction.tag == "put_code":
-        return (Code(instruction.value, scope), stack), scope
+        return (Code(instruction.value, scope, source_code=instruction.source_code), stack), scope
 
     elif instruction.tag == "make_vec":
         elements = []
@@ -97,5 +138,14 @@ def run(instructions):
     return call(
         stack=None,
         scope=global_scope,
-        function=Code(instructions, closure=None)
+        function=Code(instructions, closure=None, name="<entry-point>")
+    )
+
+
+def run_with_middleware(instructions, middleware):
+    return call_with_middleware(
+        stack=None,
+        scope=global_scope,
+        function=Code(instructions, closure=None, name="<entry-point>"),
+        middleware=middleware
     )

@@ -42,6 +42,26 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return (Int(x.value * y.value), rest), scope
 
 
+@module.register("/")
+def floor_div(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"Cannot perform floor division: {x} and {y} are not both ints")
+    elif y.value == 0:
+        fail(f"Division by zero: {x.value} 0 /")
+    return (Int(x.value // y.value), rest), scope
+
+
+@module.register("%")
+def modulo(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"Cannot get modulo: {x} and {y} are not both ints")
+    elif y.value == 0:
+        fail(f"Division by zero: {x.value} 0 %")
+    return (Int(x.value % y.value), rest), scope
+
+
 def _simplify_fraction(numerator: int, denominator: int):
     gcd = math.gcd(numerator, denominator)
     return (numerator // gcd, denominator // gcd)
