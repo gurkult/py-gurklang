@@ -6,7 +6,7 @@ from typing import Iterable, List
 from gurklang.types import *  # type: ignore
 from . import stdlib_modules
 from .builtin_utils import Module, Fail, make_simple, raw_function
-from .vm_utils import stringify_value, render_value_as_source
+from .vm_utils import stringify_value, render_value_as_source, tuple_equals
 
 module = Module("builtins")
 
@@ -142,6 +142,21 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         fail(f"{identifier} is not an atom")
     fn = Code([Put(value)], name=identifier.value, closure=scope)
     return rest, scope.with_member(identifier.value, fn)
+
+
+@module.register_simple("=")
+def equals(stack: T[V, S], scope: Scope, fail: Fail):
+    """Check if two values are equal."""
+    (y, (x, rest)) = stack
+    if not x.tag == y.tag:
+        fail(f"cannot compare type {x.tag} with type {y.tag}")
+    elif x.tag == "atom":
+        fail(f"cannot compare atoms. Use `is` instead")
+    elif x.tag in ("str", "int", "code") and x == y:
+        return (Atom.make("true"), rest), scope
+    elif x.tag == "vec":
+        return (Atom.bool(tuple_equals(x, y, fail)), rest), scope
+    return (Atom.make("false"), rest), scope
 
 
 @module.register_simple("not")
