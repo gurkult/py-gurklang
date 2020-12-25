@@ -97,7 +97,7 @@ DEFAULT_PRELUDE = R"""
   ""     :repl[after-output]  var
   "<-- " :repl[before-stack]  var
 }
-parent-scope :repl[default-style] jar
+parent-scope :repl[style:default] jar
 
 
 {
@@ -106,7 +106,7 @@ parent-scope :repl[default-style] jar
   ""                       :repl[after-output]  var
   "├─"                     :repl[before-stack]  var
 }
-parent-scope :repl[box-style] jar
+parent-scope :repl[style:box] jar
 
 
 {
@@ -115,7 +115,7 @@ parent-scope :repl[box-style] jar
   "\n"                       :repl[after-output]  var
   "│\n╞═"                     :repl[before-stack]  var
 }
-parent-scope :repl[wide-box-style] jar
+parent-scope :repl[style:box-wide] jar
 
 
 {
@@ -124,7 +124,7 @@ parent-scope :repl[wide-box-style] jar
   ""      :repl[after-output]  var
   "===> " :repl[before-stack]  var
 }
-parent-scope :repl[in-out-style] jar
+parent-scope :repl[style:in-out] jar
 
 
 { :true :repl[display-stack] var }
@@ -135,7 +135,7 @@ parent-scope :show-stack jar
 parent-scope :hide-stack jar
 
 
-repl[default-style]
+repl[style:default]
 hide-stack
 
 
