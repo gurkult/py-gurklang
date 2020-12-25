@@ -69,12 +69,6 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 @module.register_simple("not")
 def not_(stack: T[V, S], scope: Scope, fail: Fail):
-    """
-    Reverses a boolean.
-
-    :true -> :false
-    :false -> :true.
-    """
     (head, rest) = stack
     if head is Atom.make("true"):
         return (Atom.make("false"), rest), scope
