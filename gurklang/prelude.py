@@ -339,7 +339,7 @@ def _make_name_getter(lookup: Dict[str, Value], name: str):
             raise LookupError(f"member {name.value} not found")
 
         function = lookup[name.value]
-        return State((function, rest), state.scope)
+        return state.with_stack((function, rest))
 
     return Code([Put(NativeFunction(name_getter, name)), CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
