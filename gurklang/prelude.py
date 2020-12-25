@@ -5,7 +5,7 @@ from typing import Iterable, Dict, List, Tuple
 from . import stdlib_modules
 from gurklang.types import *  # type: ignore
 from .builtin_utils import Module, Fail, make_simple, raw_function
-from .vm_utils import stringify_value, unwrap_stack
+from .vm_utils import stringify_value, render_value_as_source
 
 module = Module("builtins")
 
@@ -65,6 +65,17 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         fail(f"{identifier} is not an atom")
     fn = Code([Put(value)], name=identifier.value, closure=scope)
     return rest, scope.with_member(identifier.value, fn)
+
+
+@module.register_simple("not")
+def not_(stack: T[V, S], scope: Scope, fail: Fail):
+    (head, rest) = stack
+    if head is Atom.make("true"):
+        return (Atom.make("false"), rest), scope
+    elif head is Atom.make("false"):
+        return (Atom.make("true"), rest), scope
+    else:
+        fail(f"{render_value_as_source(head)} is not a boolean")
 
 
 @module.register_simple()
