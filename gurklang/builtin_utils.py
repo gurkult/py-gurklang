@@ -39,6 +39,13 @@ class Module:
             return native_fn
         return inner
 
+    def register(self, name: Optional[str] = None):
+        def inner(fn: Callable[[State, Fail], State]) -> NativeFunction:
+            native_fn = make_function(name)(fn)  # type: ignore
+            self.add(native_fn.name, native_fn)
+            return native_fn
+        return inner
+
     def make_scope(self, id: int, parent: Optional[Scope]=None):
         return Scope(parent=parent, id=id, values=Map(self.members))
 

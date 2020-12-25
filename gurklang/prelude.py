@@ -292,7 +292,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name,
                   flags=function.flags)
     elif function.tag == "native":
-        rv = NativeFunction(lambda state: function.fn(State.add(value)), function.name)  # type: ignore
+        rv = NativeFunction(lambda state: function.fn(State.push(value)), function.name)  # type: ignore
     else:
         fail(f"{function} is not a function")
 

@@ -61,6 +61,7 @@ class Scope:
 
 # The stack is immutable and is modelled as a linked list:
 Stack = Optional[Tuple["Value", "Stack"]]
+InfiniteStack = Tuple["Value", Tuple["Value", Tuple["Value", "InfiniteStack"]]]
 
 
 @dataclass(frozen=True)
@@ -68,18 +69,19 @@ class State:
     stack: Stack
     scope: Scope
     boxes: Map
+    last_box_id: int
 
-    def add(self, *values: "Value"):
+    def infinite_stack(self) -> InfiniteStack:
+        return self.stack # type: ignore
+
+    def push(self, *values: "Value"):
         stack = self.stack
         for value in values:
             stack = (value, stack)
         return self.with_stack(stack)
 
-    def box_value(self, id: int) -> Optional["Value"]:
-        return self.boxes.get(id)
-
-    def set_box(self, id: int, value: Value):
-        return self.with_boxes(self.boxes.set(id, value))
+    def read_box(self, id: int) -> "Value":
+        return self.boxes[id]
 
     def with_stack(self, stack: Stack):
         return dataclass_replace(self, stack=stack)
@@ -90,12 +92,29 @@ class State:
     def with_boxes(self, boxes: Map):
         return dataclass_replace(self, boxes=boxes)
 
+    def increment_box_id(self):
+        return dataclass_replace(self, last_box_id=self.last_box_id + 1)
+
+    def add_box(self, value: "Value") -> Tuple["Box", "State"]:
+        state = self.increment_box_id()
+        box = Box(state.last_box_id)
+        state = state.with_boxes(state.boxes.set(state.last_box_id, value))
+        return box, state
+
+    def kill_box(self, id: int):
+        if id not in self.boxes:
+            raise RuntimeError(f"Trying to kill nonexistent box with id {id}")
+        return self.with_boxes(self.boxes.delete(id))
+
 
 @dataclass(frozen=True)
 class Put:
     """Put a single value on top of the stack"""
     value: Value
     tag: ClassVar[Literal["put"]] = "put"
+
+    def as_vec(self):
+        return Vec((Atom("Put"), self.value))
 
 @dataclass(frozen=True)
 class PutCode:
@@ -155,8 +174,54 @@ class PopScope:
 
     def as_vec(self):
         return Vec((Atom("PopScope"),))
+
+@dataclass(frozen=True)
+class MakeBox:
+    """Pop the top value from the stack and make a box out of it"""
+    tag: ClassVar[Literal["make_box"]] = "make_box"
+
+    def as_vec(self):
+        return Vec((Atom("MakeBox"),))
+
+@dataclass(frozen=True)
+class KillBox:
+    """Forget a value stored in a box with a given id"""
+    id: int
+    tag: ClassVar[Literal["kill_box"]] = "kill_box"
+
+    def as_vec(self):
+        return Vec((Atom("KillBox"), Int(self.id)))
+
+@dataclass(frozen=True)
+class LockBox:
+    """Start a transaction on a box"""
+    id: int
+    tag: ClassVar[Literal["lock_box"]] = "lock_box"
+
+    def as_vec(self):
+        return Vec((Atom("LockBox"), Int(self.id)))
+
+@dataclass(frozen=True)
+class UnlockBox:
+    """Finish transaction on a box"""
+    id: int
+    tag: ClassVar[Literal["unlock_box"]] = "unlock_box"
+
+    def as_vec(self):
+        return Vec((Atom("UnlockBox"), Int(self.id)))
+
+@dataclass(frozen=True)
+class RestoreBox:
+    """Roll back a transaction on a box"""
+    id: int
+    tag: ClassVar[Literal["restore_box"]] = "restore_box"
+
+    def as_vec(self):
+        return Vec((Atom("RestoreBox"), Int(self.id)))
+
 # `Instruction` is a single step executed by the interpreter
-Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope]
+Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope, MakeBox, KillBox, LockBox, UnlockBox, RestoreBox]
+
 
 
 class CodeFlags(IntFlag):
@@ -250,18 +315,9 @@ class NativeFunction:
     name: str = "λ"
     tag: ClassVar[Literal["native"]] = "native"
 
-@dataclass(frozen=True, eq=False)
+@dataclass(frozen=True)
 class Box:
     id: int
-    on_destruction: Callable[[Box], None]
     tag: ClassVar[Literal["box"]] = "box"
-
-    def __eq__(self, other):
-        if not isinstance(other, Box):
-            return NotImplemented
-        return self.id == other.id
-
-    def __del__(self):
-        self.on_destruction(self)
 
 Value = Union[Atom, Str, Int, Vec, Code, NativeFunction, Box]
