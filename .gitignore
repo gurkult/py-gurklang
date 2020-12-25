@@ -133,3 +133,4 @@ env_pypy3.7/
 media/
 build/
 .vscode/
+.sourcery.yaml
