@@ -145,16 +145,16 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 
 @module.register_simple("=")
-def equals(stack: T[V, S], scope: Scope, fail: Fail):
+def equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     """Check if two values are equal."""
     (y, (x, rest)) = stack
-    if not x.tag == y.tag:
+    if x.tag != y.tag:
         fail(f"cannot compare type {x.tag} with type {y.tag}")
     elif x.tag == "atom":
         fail(f"cannot compare atoms. Use `is` instead")
     elif x.tag in ("str", "int", "code") and x == y:
         return (Atom.make("true"), rest), scope
-    elif x.tag == "vec":
+    elif x.tag == "vec" and y.tag == "vec":
         return (Atom.bool(tuple_equals(x, y, fail)), rest), scope
     return (Atom.make("false"), rest), scope
 

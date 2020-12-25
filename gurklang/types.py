@@ -144,6 +144,8 @@ class CodeFlags(IntFlag):
 
 _atom_cache: Dict[str, Atom] = {}
 
+
+_bool = bool
 @dataclass(eq=False)
 class Atom:
     """
@@ -152,7 +154,7 @@ class Atom:
     Atoms are cached and compared by identity.
     """
     value: str
-    _original: bool = False
+    _original: _bool = False
     tag: ClassVar[Literal["atom"]] = "atom"
 
     def __post_init__(self):
@@ -166,7 +168,7 @@ class Atom:
         return _atom_cache[name]
 
     @staticmethod
-    def bool(x: bool) -> Atom:
+    def bool(x: _bool) -> Atom:
         return Atom.make("true" if x else "false")
 
 
