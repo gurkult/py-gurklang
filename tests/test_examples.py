@@ -1,11 +1,22 @@
+from pytest import raises
+import time
 import gurklang.vm as vm
 from gurklang.parser import parse
 from gurklang.types import Int
 
 
 def run(code):
-    stack = vm.run(parse(code)).stack
-    return stack
+    start_time = time.time()
+    def on_timeout_bail(*_):
+        if time.time() >= start_time + 1:
+            raise TimeoutError(code)
+    return vm.run_with_middleware(parse(code), on_timeout_bail).stack
+
+
+# Meta-test:
+def test_run_should_catch_infinite_loop():
+    with raises(TimeoutError):
+        run("{ (1 5) sleep dup ! } dup ! ")
 
 
 def number_stack(*args):
