@@ -20,7 +20,7 @@ def stringify_value(v: Value):
     elif v.tag == "vec":
         return "(" + " ".join(map(stringify_value, v.values)) + ")"
     elif v.tag == "native":
-        return f"{v.name} (built-in)"
+        return f"`{v.name}`"
     else:
         raise RuntimeError(v)
 
