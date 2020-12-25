@@ -51,7 +51,7 @@ def forall(*types: Union[Type[Value], SearchStrategy]):
         _last_test = given(**{
             v: vt if isinstance(vt, SearchStrategy) else infer
             for (v, vt) in zip(var_names, types)})(_last_test)  # type: ignore
-        return _last_test  # type: ignore
+        return wraps(fn)(_last_test)
     return decorator
 
 
