@@ -3,5 +3,6 @@ pytest
 colorama
 hypothesis
 mkdocs
-mkdocstrings
-mkdocs-windmill
+mkdocs-material
+pymdown-extensions
+pygments
