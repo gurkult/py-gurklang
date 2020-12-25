@@ -221,7 +221,7 @@ def _match_with_vec(pattern: Vec, value: Value, fail: Fail) -> Captures:
     return captures, variables
 
 
-def _match_with_atom(pattern: Atom, value: Value, __fail: Fail) -> Captures:
+def _match_with_atom(pattern: Atom, value: Value, fail: Fail) -> Captures:
     label = pattern.value
     if label == '_':
         return [], {}
@@ -229,6 +229,10 @@ def _match_with_atom(pattern: Atom, value: Value, __fail: Fail) -> Captures:
         return [], {}
     elif frozenset(label) == {'.'}:
         return [(len(label), value)], {}
+    elif label[0] == "." and all(map("0123456789".__contains__, label[1:])):
+        return [(int(label[1:]), value)], {}
+    elif label[0] == ".":
+        fail(f"Invalid . pattern: {label}")
     else:
         return [], {label: Code([Put(value)], closure=None)}
 

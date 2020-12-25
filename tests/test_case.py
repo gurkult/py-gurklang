@@ -98,3 +98,10 @@ def test_case_tuple_match():
 def test_case_stack_capture_order_in_tuple():
     assert run('(1 2 3 4) { ((. ... .. .)) {} } case') == run("1 4 3 2")
     assert run('(1 (2 (3 4) 5) 6) { ((. (.. (. .) ..) ..)) {} } case') == run("1 3 4 2 5 6")
+
+
+def test_numbered_dot_pattern():
+    assert (
+        run('(1 2 3 4) { ((. .3 .2 .)) {} } case')
+        == run('(1 2 3 4) { ((. ... .. .)) {} } case')
+    )
