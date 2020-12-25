@@ -1,9 +1,10 @@
 import dataclasses
 import time
 from operator import itemgetter
-from typing import Iterable, Dict, List, Tuple
-from . import stdlib_modules
+from typing import Iterable, List
+
 from gurklang.types import *  # type: ignore
+from . import stdlib_modules
 from .builtin_utils import Module, Fail, make_simple, raw_function
 from .vm_utils import stringify_value, render_value_as_source
 
@@ -12,6 +13,8 @@ module = Module("builtins")
 # Shortcuts for brevity
 T, V, S = Tuple, Value, Stack
 
+
+# <`stack` functions>
 
 @module.register_simple()
 def dup(stack: T[V, S], scope: Scope, fail: Fail):
@@ -32,10 +35,84 @@ def swap(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
 
 @module.register_simple()
-def rot3(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
-    (z, (y, (x, rest))) = stack
-    return (x, (y, (z, rest))), scope
+def tuck(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (x, (y, rest)) = stack
+    return (y, (x, (y, rest))), scope
 
+
+@module.register_simple()
+def rot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
+    (z, (y, (x, rest))) = stack
+    return (y, (x, (z, rest))), scope
+
+
+@module.register_simple()
+def unrot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
+    (z, (y, (x, rest))) = stack
+    return (x, (z, (y, rest))), scope
+
+
+@module.register_simple()
+def nip(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    return (y, rest), scope
+
+
+@module.register_simple()
+def over(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    return (x, (y, (x, rest))), scope
+
+
+@module.register_simple('2dup')
+def two_dup(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    y, (x, rest) = stack
+    return (y, (x, (y, (x, rest)))), scope
+
+
+@module.register_simple('2drop')
+def two_drop(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (x, rest) = stack
+    return rest[1], scope
+
+
+@module.register_simple('2swap')
+def two_swap(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, rest)))), scope
+
+
+@module.register_simple('2tuck')
+def two_tuck(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, (c, (d, rest)))))), scope
+
+
+@module.register_simple('2rot')
+def two_rot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, (e, (f, rest)))))) = stack
+    return (c, (d, (e, (f, (a, (b, rest)))))), scope
+
+
+@module.register_simple('2unrot')
+def two_unrot(stack: T[V, T[V, T[V, T[V, T[V, T[V, S]]]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, (e, (f, rest)))))) = stack
+    return (e, (f, (a, (b, (c, (d, rest)))))), scope
+
+
+@module.register_simple('2nip')
+def two_nip(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (_, (_, rest)))) = stack
+    return (a, (b, rest)), scope
+
+
+@module.register_simple('2over')
+def two_over(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
+    (a, (b, (c, (d, rest)))) = stack
+    return (c, (d, (a, (b, (c, (d, rest)))))), scope
+
+
+# </`stack` functions>
 
 @module.register_simple()
 def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
@@ -200,7 +277,7 @@ def close(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name,
                   flags=function.flags)
     elif function.tag == "native":
-        rv = NativeFunction(lambda state: function.fn(State.add(value)),  function.name) # type: ignore
+        rv = NativeFunction(lambda state: function.fn(State.add(value)), function.name)  # type: ignore
     else:
         fail(f"{function} is not a function")
 
