@@ -18,8 +18,8 @@ def number_stack(*args):
 def test_factorial():
     assert run(R"""
     :math (* -) import
-    { { (. .) { dup 1 - rot * swap n! }
-        (1) {}
+    { { (1) {}
+        (. .) { dup 1 - rot * swap n! }
       } case
     } :n! jar
     1 10 n!

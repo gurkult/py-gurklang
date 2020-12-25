@@ -1,4 +1,4 @@
-from .test_examples import run, number_stack as nums
+from tests.test_examples import run, number_stack as nums
 
 
 def test_dup():

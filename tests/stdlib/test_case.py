@@ -1,6 +1,6 @@
 from pytest import raises
 
-from .test_examples import run, number_stack
+from tests.test_examples import run, number_stack
 
 
 def test_case_value_match():
