@@ -1,3 +1,4 @@
 immutables
 pytest
 colorama
+hypothesis
