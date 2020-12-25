@@ -163,7 +163,7 @@ class Atom:
         return rv
 
     def __init__(self, value: str):
-        self.name = value
+        self.value = value
 
     @staticmethod
     def make(name: str) -> Atom:
