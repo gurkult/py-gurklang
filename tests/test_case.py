@@ -49,8 +49,8 @@ def test_case_named_capture():
 def test_case_in_recursive_function():
     assert run("""
     :math( * - ) import
-    { { (a n) { a n * n 1 - n! }
-        (1) {}
+    { { (1)   { }
+        (a n) { a n * n 1 - n! }
       } case
     } :n! jar
     1 6 n!
@@ -60,8 +60,8 @@ def test_case_in_recursive_function():
 def test_case_does_not_recursion_error():
     assert run("""
     :math( * - ) import
-    { { () { 1 - f }
-        (1) {11}
+    { { (1) { 11 }
+        ()  { 1 - f }
       } case
     } :f jar
     3000 f
