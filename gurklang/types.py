@@ -67,18 +67,28 @@ Stack = Optional[Tuple["Value", "Stack"]]
 class State:
     stack: Stack
     scope: Scope
+    boxes: Map
 
     def add(self, *values: "Value"):
         stack = self.stack
         for value in values:
             stack = (value, stack)
-        return State(stack, self.scope)
+        return self.with_stack(stack)
+
+    def box_value(self, id: int) -> Optional["Value"]:
+        return self.boxes.get(id)
+
+    def set_box(self, id: int, value: Value):
+        return self.with_boxes(self.boxes.set(id, value))
 
     def with_stack(self, stack: Stack):
         return dataclass_replace(self, stack=stack)
 
     def with_scope(self, scope: Scope):
         return dataclass_replace(self, scope=scope)
+
+    def with_boxes(self, boxes: Map):
+        return dataclass_replace(self, boxes=boxes)
 
 
 @dataclass(frozen=True)
@@ -160,19 +170,19 @@ class Atom:
         return Atom.make("true" if x else "false")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Str:
     """String, like 'hello'"""
     value: str
     tag: ClassVar[Literal["str"]] = "str"
 
-@dataclass
+@dataclass(frozen=True)
 class Int:
     """Integer, like 42"""
     value: int
     tag: ClassVar[Literal["int"]] = "int"
 
-@dataclass
+@dataclass(frozen=True)
 class Vec:
     """
     Vector (tuple), like (a b 7)
@@ -182,7 +192,7 @@ class Vec:
     values: Sequence[Value]
     tag: ClassVar[Literal["vec"]] = "vec"
 
-@dataclass
+@dataclass(frozen=True)
 class Code:
     """Code value like { :b var :a var b a }"""
     instructions: Sequence[Instruction]
@@ -195,11 +205,25 @@ class Code:
     def with_name(self, name: str) -> Code:
         return dataclass_replace(self, name=name)
 
-@dataclass
+@dataclass(frozen=True)
 class NativeFunction:
     """A function implemented in Python, like `if` or `+`"""
-    fn: Callable[[Stack, Scope], Tuple[Stack, Scope]]
+    fn: Callable[[State], State]
     name: str = "λ"
     tag: ClassVar[Literal["native"]] = "native"
 
-Value = Union[Atom, Str, Int, Vec, Code, NativeFunction]
+@dataclass(frozen=True, eq=False)
+class Box:
+    id: int
+    on_destruction: Callable[[Box], None]
+    tag: ClassVar[Literal["box"]] = "box"
+
+    def __eq__(self, other):
+        if not isinstance(other, Box):
+            return NotImplemented
+        return self.id == other.id
+
+    def __del__(self):
+        self.on_destruction(self)
+
+Value = Union[Atom, Str, Int, Vec, Code, NativeFunction, Box]

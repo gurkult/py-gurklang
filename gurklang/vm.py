@@ -38,28 +38,7 @@ def call(state: State, function: Union[Code, NativeFunction]) -> State:
     Instructions are piped into a deque, from which they're popped
     and executed one by one.
     """
-    pipe: "deque[Instruction]" = deque()
-
-    _load_function(state.scope, pipe, function)
-
-    while pipe:
-        instruction = pipe.pop()
-
-        if instruction.tag == "call":
-            pipe.append(CallByValue())
-            pipe.append(Put(state.scope[instruction.function_name]))
-        elif instruction.tag == "call_by_value":
-            (function, stack) = state.stack  # type: ignore
-            state = State(stack, state.scope)
-            if function.tag == "code":
-                _load_function(state.scope, pipe, function)
-            else:
-                state = function.fn(state)
-        else:
-            stack, scope = execute(state.stack, state.scope, instruction)
-            state = State(stack, scope)
-
-    return state
+    return call_with_middleware(state, function, lambda _, __, ___: None)
 
 
 def call_with_middleware(
@@ -68,10 +47,7 @@ def call_with_middleware(
     middleware: Callable[[Instruction, Stack, Stack], None],
 ) -> State:
     """
-    Stackless implementation of calling a function.
-
-    Instructions are piped into a deque, from which they're popped
-    and executed one by one.
+    Like `call`, but execute some action on each change
     """
     pipe: "deque[Instruction]" = deque()
 
@@ -137,14 +113,14 @@ global_scope = make_scope(parent=builtin_scope)
 
 def run(instructions):
     return call(
-        State(None, global_scope),
+        State(None, global_scope, Map()),
         Code(instructions, closure=None, name="<entry-point>")
     )
 
 
 def run_with_middleware(instructions, middleware):
     return call_with_middleware(
-        State(None, global_scope),
+        State(None, global_scope, Map()),
         Code(instructions, closure=None, name="<entry-point>"),
         middleware
     )

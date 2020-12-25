@@ -98,7 +98,7 @@ source8 = R"""
 {
   dup 2 <
     { }
-    { dup 1 - rot3 * swap n!-impl } parent-scope
+    { dup 1 - unrot * swap n!-impl } parent-scope
     if !
 } parent-scope :n!-impl jar
 
@@ -150,7 +150,7 @@ parent-scope :pjar jar
 { { } parent-scope close close }
 :--make-generator pjar
 
-{ rot3 swap --make-generator swap jar }
+{ rot --make-generator swap jar }
 :generator pjar
 
 { iterate forever }
@@ -162,7 +162,7 @@ parent-scope :pjar jar
   swap dup
   println
   (1 100) sleep
-  swap dup rot3 +
+  swap dup rot +
 }
 parent-scope
 (1 (1 ()))
@@ -173,14 +173,14 @@ fib forever
 
 source12 = R"""
 :math (* -) import
-{ { (. .) { dup 1 - rot3 * swap n! }
+{ { (. .) { dup 1 - rot * swap n! }
     (1) {}
   } case
 } :n! jar
 1 10 n!
 """
 
-stack, scope = vm.run(parse(source12))
+stack, scope = vm.run(parse(source10))
 
 print("\n----------------")
 print("Resulting stack:")
