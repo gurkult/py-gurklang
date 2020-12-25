@@ -155,6 +155,10 @@ class Atom:
             _atom_cache[name] = Atom(name, True)
         return _atom_cache[name]
 
+    @staticmethod
+    def bool(x: bool) -> Atom:
+        return Atom.make("true" if x else "false")
+
 
 @dataclass
 class Str:
