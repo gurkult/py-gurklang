@@ -88,7 +88,7 @@ def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack
         return (instruction.value, stack), scope
 
     elif instruction.tag == "put_code":
-        return (Code(instruction.value, scope, source_code=instruction.source_code), stack), scope
+        return (Code(instruction.instructions, scope, source_code=instruction.source_code), stack), scope
 
     elif instruction.tag == "make_vec":
         elements = []

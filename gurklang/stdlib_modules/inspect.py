@@ -67,7 +67,7 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
                 print("CallByValue (some code)")
 
             elif instruction.tag == "put_code":
-                code_id = get_code_id(instruction.value)
+                code_id = get_code_id(instruction.instructions)
                 print(f"PutCode (code #{code_id})")
 
             elif instruction.tag == "make_vec":

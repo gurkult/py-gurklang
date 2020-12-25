@@ -100,9 +100,15 @@ class Put:
 @dataclass(frozen=True)
 class PutCode:
     """Create a closure and put a code value on top of the stack"""
-    value: Sequence[Instruction]
+    instructions: Sequence[Instruction]
     source_code: Optional[str] = None
     tag: ClassVar[Literal["put_code"]] = "put_code"
+
+    def as_vec(self):
+        rv = (Atom("PutCode"), Vec([i.as_vec() for i in self.instructions]))
+        if self.source_code is not None:
+            rv += (Str(self.source_code),)
+        return Vec(rv)
 
 @dataclass(frozen=True)
 class CallByName:
@@ -110,10 +116,16 @@ class CallByName:
     function_name: str
     tag: ClassVar[Literal["call"]] = "call"
 
+    def as_vec(self):
+        return Vec((Atom("CallByName"), Str(self.function_name)))
+
 @dataclass(frozen=True)
 class CallByValue:
     """Pop a function from the top of the stack and call it"""
     tag: ClassVar[Literal["call_by_value"]] = "call_by_value"
+
+    def as_vec(self):
+        return Vec((Atom("CallByValue"),))
 
 @dataclass(frozen=True)
 class MakeVec:
@@ -121,17 +133,28 @@ class MakeVec:
     size: int
     tag: ClassVar[Literal["make_vec"]] = "make_vec"
 
+    def as_vec(self):
+        return Vec((Atom("MakeVec"), Int(self.size)))
+
 @dataclass(frozen=True)
 class MakeScope:
     """Create a local scope given a parent scope"""
     parent: Optional[Scope]
     tag: ClassVar[Literal["make_scope"]] = "make_scope"
 
+    def as_vec(self):
+        if self.parent is None:
+            return Vec((Atom("MakeScope"),))
+        else:
+            return Vec((Atom("MakeScope"), Int(self.parent.id)))
+
 @dataclass(frozen=True)
 class PopScope:
     """Discard the topmost scope and return to the parent scope"""
     tag: ClassVar[Literal["pop_scope"]] = "pop_scope"
 
+    def as_vec(self):
+        return Vec((Atom("PopScope"),))
 # `Instruction` is a single step executed by the interpreter
 Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope]
 
