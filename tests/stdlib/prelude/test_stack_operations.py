@@ -1,6 +1,4 @@
 from gurklang.types import Int
-from hypothesis import infer, given
-from tests.test_examples import run, irun, number_stack as nums
 from ...native_utils import forall
 
 
