@@ -4,3 +4,4 @@ colorama
 hypothesis
 mkdocs
 mkdocstrings
+mkdocs-windmill
