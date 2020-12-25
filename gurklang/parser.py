@@ -59,7 +59,7 @@ def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instructi
         elif token.name == "NAME":
             yield Put(Atom(token.value))
         elif token.name == "ATOM":
-            yield Put(Atom(":" + token.value))
+            yield Put(Atom(token.value))
         elif token.name == "LPAR":
             yield from _parse_vec(source, token_stream)
         elif token.name in ["STR_D", "STR_S"]:
