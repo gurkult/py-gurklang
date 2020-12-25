@@ -35,12 +35,12 @@ In Gurklang, all operations manipulate a _stack_ in some way:
 and you end up with `(1 ())`, which means: `1`, then the empty stack.
 - When you run the command `2`, you push the number `2` on top of the stack,
 and you end up with `(2 (1 ()))`, which means: `2`, then `1`, then the empty stack.
-- Running `pick` simply prints the value of the stack
+- Running `peek` simply prints the value of the stack
 
 Creating numbers isn't very exciting. Let's destroy them!
 ```elixir
 >>> peek
-(4 (3 (2 1 ())))
+(4 (3 (2 (1 ()))))
 >>> drop
 >>> peek
 (3 (2 (1 ())))
