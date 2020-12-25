@@ -36,8 +36,8 @@ def test_case_named_capture():
 def test_case_in_recursive_function():
     assert run("""
     :math( * - ) import
-    { { (a n) { a n * n 1 - n! }
-        (1) {}
+    { { (1)   { }
+        (a n) { a n * n 1 - n! }
       } case
     } :n! jar
     1 6 n!
@@ -47,8 +47,8 @@ def test_case_in_recursive_function():
 def test_case_does_not_recursion_error():
     assert run("""
     :math( * - ) import
-    { { () { 1 - f }
-        (1) {11}
+    { { (1) { 11 }
+        ()  { 1 - f }
       } case
     } :f jar
     3000 f
@@ -60,8 +60,9 @@ def test_case_parent_scope():
 
 
 def test_case_ignore():
-    assert run('1 2 3 4 5 {(_ _ .. . .) {}}case') == number_stack(4, 5, 3)
+    assert run('1 2 3 4 5 {(_ _ .. . .) {}} case') == run("4 5 3")
 
+    # 4 5 3
 
 def test_case_ignore_does_not_bind():
     with raises(KeyError):
@@ -79,3 +80,15 @@ def test_case_atom_match():
 
 def test_case_tuple_match():
     assert run(':math (*) import (rect 10 10) {((:rect . .)) { * } } case') == number_stack(100)
+
+
+def test_case_stack_capture_order_in_tuple():
+    assert run('(1 2 3 4) { ((. ... .. .)) {} } case') == run("1 4 3 2")
+    assert run('(1 (2 (3 4) 5) 6) { ((. (.. (. .) ..) ..)) {} } case') == run("1 3 4 2 5 6")
+
+
+def test_numbered_dot_pattern():
+    assert (
+        run('(1 2 3 4) { ((. .3 .2 .)) {} } case')
+        == run('(1 2 3 4) { ((. ... .. .)) {} } case')
+    )

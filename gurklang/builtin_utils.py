@@ -47,7 +47,7 @@ def make_simple(name: Optional[str] = None):
     def inner(fn: Callable[[Z, Scope, Fail], Tuple[Stack, Scope]]) -> NativeFunction:
         def new_fn(state: State, fail: Fail):
             stack, scope = fn(state.stack, state.scope, fail)
-            return State(stack, scope)
+            return state.with_stack(stack).with_scope(scope)
         new_fn.__name__ = fn.__name__
         return make_function(name)(new_fn)
     return inner
