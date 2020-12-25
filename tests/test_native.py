@@ -4,7 +4,7 @@ from .native_utils import forall, comparables
 
 
 @forall(Int, Int)
-def test_swap_is_own_inverse(postulate):
+def test_swap_is_own_inverse():
     """
     :b var :a var
 
@@ -14,7 +14,7 @@ def test_swap_is_own_inverse(postulate):
     """
 
 @forall(Int, Int, Int)
-def test__rot_rot_rot__is_id(postulate):
+def test__rot_rot_rot__is_id():
     """
     :c var :b var :a var
 

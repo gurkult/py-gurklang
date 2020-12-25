@@ -35,7 +35,7 @@ def _run_test(*xs: Value, code: str, name: str):
 
 
 def forall(*types: Union[Type[Value], SearchStrategy]):
-    def decorator(fn: Callable[[Callable[[str], None]], None]):
+    def decorator(fn: Callable[..., None]):
         code = fn.__doc__
         name = fn.__name__
 
