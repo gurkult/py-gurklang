@@ -13,8 +13,8 @@ Fore: Any
 Style: Any
 init()
 
-from .types import Code, CodeFlags, Scope, Stack, Value
-from .vm import run, call, make_scope
+from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value
+from .vm import call_with_middleware, run, call, make_scope
 from .parser import parse, ParseError
 
 
@@ -144,6 +144,10 @@ hide-stack
 """
 
 
+class ExitDebug(BaseException):
+    pass
+
+
 class Repl:
     stack: Stack
     scope: Scope
@@ -179,12 +183,15 @@ class Repl:
             return "quit!"
 
     def _process_command(self, command: str):
-        return self._process_directives(command) or self._process_code(command)
+        return (
+            self._process_directives(command)
+            or self._run_with_error_handling(command, lambda: call(self.state, code(command)))
+        )
 
-    def _process_code(self, source_code: str):
+    def _run_with_error_handling(self, source_code: str, run: Callable[[], State]):
         self.sniper.watch()
         try:
-            self.state = call(self.state, code(source_code))
+            self.state = run()
         except ParseError as e:
             _display_parse_error(e)
         except KeyboardInterrupt as e:
@@ -195,15 +202,39 @@ class Repl:
             _display_runtime_error(e)
         finally:
             self.sniper.unwatch()
-            self._display_stack()
+            self._display_stack_if_on()
         return "continue"
 
+    def _debug(self, source_code: str):
+        def on_next_step(i: Instruction, old_stack: Stack, new_stack: Stack):
+            self._display_stack(self.state.with_stack(new_stack))
+            cmd = input("'next' or 'exit' (next): ")
+            if cmd == "exit":
+                raise ExitDebug
+
+        def run():
+            try:
+                resulting_state = call_with_middleware(self.state, code(source_code), middleware=on_next_step)
+                self._display_stack(resulting_state)
+                if input("accept the resulting state? y/n (n): ") in ("y", "yes", "1"):
+                    return resulting_state
+            except ExitDebug:
+                print_red("debug mode exited")
+            return self.state
+
+        self._run_with_error_handling(source_code, run)
+
     def _process_directives(self, command: str):
-        if command.strip() == "quit!":
+        command = command.strip()
+        if command == "quit!":
             print("Bye for now.")
             return "stop"
-        elif command.strip() == "traceback?":
+        elif command == "traceback?":
             self._print_last_traceback()
+            return "continue"
+        elif command.startswith("debug!"):
+            source_code = command[len("debug!"):]
+            self._debug(source_code)
             return "continue"
         else:
             return None
@@ -229,11 +260,14 @@ class Repl:
         if s != "":
             writer.write(Fore.CYAN + s + Fore.RESET)
 
-    def _display_stack(self):
+    def _display_stack_if_on(self):
         if self._is_stack_display_on:
-            print(Fore.CYAN + self._string_before_stack + Fore.YELLOW + Style.BRIGHT, end="")
-            self._run_code_for_side_effect("12 stack-repr print")
-            print(Fore.RESET + Style.RESET_ALL)
+            self._display_stack(self.state)
+
+    def _display_stack(self, state: State):
+        print(Fore.CYAN + self._string_before_stack + Fore.YELLOW + Style.BRIGHT, end="")
+        call(state, code("12 stack-repr print"))
+        print(Fore.RESET + Style.RESET_ALL)
 
     # Interacting with configuration:
 
