@@ -1,61 +1,93 @@
-from gurklang.types import CallByName, Put, Value
+from gurklang.types import Int
 from hypothesis import infer, given
 from tests.test_examples import run, irun, number_stack as nums
+from ...native_utils import forall
 
 
-@given(a=infer)
-def test_dup(a: int):
-    assert run(f'{a} dup') == nums(a, a)
+@forall(Int)
+def test_dup():
+    """
+    :a var
+
+    {a dup}, {a a}, =
+    """
 
 
-@given(a=infer)
-def test_dup_value(a: Value):
-    assert irun(Put(a), CallByName("dup")) == (a, (a, None))
+@forall(Int, Int)
+def test_2dup():
+    """
+    :b var :a var
+
+    {a b 2dup}, {a b a b}, =
+    """
 
 
-@given(a=infer, b=infer)
-def test_2dup(a: int, b: int):
-    assert run(f'{a} {b} 2dup') == nums(a, b, a, b)
+@forall(Int, Int)
+def test_drop():
+    """
+    :b var :a var
+
+    {a b drop}, {a}, =
+    """
 
 
-@given(a=infer, b=infer)
-def test_drop(a: int, b: int):
-    assert run(f'{a} {b} drop') == nums(a)
+@forall(Int, Int, Int)
+def test_2drop():
+    """
+    :c var :b var :a var
+
+    {a b c 2drop}, {a}, =
+    """
 
 
-@given(a=infer, b=infer, c=infer)
-def test_2drop(a: int, b: int, c: int):
-    assert run(f'{a} {b} {c} 2drop') == nums(a)
-
-
+@forall(Int, Int)
 def test_swap():
-    assert run('3 4 swap') == nums(4, 3)
-    assert run('3 4 5 6 2swap') == nums(5, 6, 3, 4)
+    """
+    :b var :a var
+
+    {a b swap}, {b a}, =
+    """
 
 
+@forall(Int, Int)
 def test_over():
-    assert run('3 4 over') == nums(3, 4, 3)
-    assert run('3 4 5 6 2over') == nums(3, 4, 5, 6, 3, 4)
+    """
+    :b var :a var
+
+    {a b over}, {a b a}, =
+    """
 
 
+@forall(Int, Int, Int)
 def test_rot():
-    assert run('3 4 5 rot') == nums(5, 3, 4)
-    assert run('3 4 5 6 7 8 2rot') == nums(7, 8, 3, 4, 5, 6)
+    """
+    :c var :b var :a var
+
+    {a b c rot}, {c a b}, =
+    """
 
 
+@forall(Int, Int, Int)
 def test_unrot():
-    assert run('3 4 5 unrot') == nums(4, 5, 3)
-    assert run('3 4 5 6 7 8 2unrot') == nums(5, 6, 7, 8, 3, 4)
+    """
+    :c var :b var :a var
+
+    {a b c unrot}, {b c a}, =
+    """
 
 
-@given(a=infer, b=infer, c=infer)
-def test__rot_rot__is__unrot(a: int, b: int, c: int):
-    assert run('3 4 5 rot rot') == run('3 4 5 unrot')
+@forall(Int, Int, Int)
+def test__rot_rot__is_unrot():
+    """
+    :c var :b var :a var
 
-@given(a=infer, b=infer, c=infer)
-def test__rot_rot_rot__is__id(a: int, b: int, c: int):
-    assert run(f'{a} {b} {c} rot rot rot') == nums(a, b, c)
+    {a b c rot rot}, {a b c unrot}, =
+    """
 
-@given(a=infer, b=infer, c=infer)
-def test__unrot_unrot_unrot__is__id(a: int, b: int, c: int):
-    assert run(f'{a} {b} {c} unrot unrot unrot') == nums(a, b, c)
+@forall(Int, Int, Int)
+def test__rot_rot_rot__is_id():
+    """
+    :c var :b var :a var
+
+    {a b c rot rot rot}, {a b c}, =
+    """
