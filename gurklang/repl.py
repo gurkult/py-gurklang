@@ -119,10 +119,10 @@ parent-scope :repl[style:box-wide] jar
 
 
 {
-  " In: " :repl[prompt]        var
-  "Out: " :repl[before-output] var
-  ""      :repl[after-output]  var
-  "===> " :repl[before-stack]  var
+  "In:\n" :repl[prompt]        var
+  "Out:\n" :repl[before-output] var
+  "\n"      :repl[after-output]  var
+  "Stack:\n" :repl[before-stack]  var
 }
 parent-scope :repl[style:in-out] jar
 
