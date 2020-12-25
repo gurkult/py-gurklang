@@ -328,8 +328,11 @@ def _match_with_atom(pattern: Atom, value: Value, fail: Fail) -> Captures:
     label = pattern.value
     if label == '_':
         return [], {}
-    elif label.startswith(':') and isinstance(value, Atom) and value.value == label[1:]:
-        return [], {}
+    elif label.startswith(':'):
+        if value == Atom(label[1:]):
+            return [], {}
+        else:
+            return None
     elif frozenset(label) == {'.'}:
         return [(len(label), value)], {}
     elif label[0] == "." and all(map("0123456789".__contains__, label[1:])):
