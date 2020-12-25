@@ -1,18 +1,38 @@
-# Gurklang
+# Install
 
-For details about the language, see `specification.md`.
+Replace `python` with the Python binary of the appropriate version
+(e.g. `python3.10` or `pypy3.7`):
+```bash
+python -m venv env
+env/bin/python -m pip install -r requirements.txt
+```
+---
 
-# Project structure
+# Test
+
+```bash
+env/bin/python -m pytest
+```
 
 ---
 
-## Tests
+# Open REPL
 
-Tests are located in `tests/`. Just in case you're confused :)
+```bash
+env/bin/python -m gurklang
+```
 
 ---
 
-## Implementation
+# Serve documentatiton
+
+```bash
+env/bin/python -m mkdocs serve
+```
+
+---
+
+# Implementation
 
 Here I'll briefly descibe all modules.
 

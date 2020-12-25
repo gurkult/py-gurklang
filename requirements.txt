@@ -2,3 +2,5 @@ immutables
 pytest
 colorama
 hypothesis
+mkdocs
+mkdocstrings
