@@ -73,8 +73,9 @@ def test_case_parent_scope():
 
 
 def test_case_ignore():
-    assert run('1 2 3 4 5 {(_ _ .. . .) {}}case') == number_stack(4, 5, 3)
+    assert run('1 2 3 4 5 {(_ _ .. . .) {}} case') == run("4 5 3")
 
+    # 4 5 3
 
 def test_case_ignore_does_not_bind():
     with raises(KeyError):
@@ -92,3 +93,8 @@ def test_case_atom_match():
 
 def test_case_tuple_match():
     assert run(':math (*) import (rect 10 10) {((:rect . .)) { * } } case') == number_stack(100)
+
+
+def test_case_stack_capture_order_in_tuple():
+    assert run('(1 2 3 4) { ((. ... .. .)) {} } case') == run("1 4 3 2")
+    assert run('(1 (2 (3 4) 5) 6) { ((. (.. (. .) ..) ..)) {} } case') == run("1 3 4 2 5 6")

@@ -205,9 +205,11 @@ Captures = Optional[Tuple[Iterable[Tuple[int, Value]], Dict[str, Value]]]
 def _match_with_vec(pattern: Vec, value: Value, fail: Fail) -> Captures:
     if value.tag != "vec":
         return None
+    if len(pattern.values) != len(value.values):
+        return None
     captures: List[Tuple[int, Value]] = []
     variables: Dict[str, Value] = {}
-    for nested_pattern, nested_value in zip(pattern.values, value.values):
+    for nested_pattern, nested_value in zip(reversed(pattern.values), reversed(value.values)):
         matches = _matches_impl(nested_pattern, nested_value, fail)
         if matches is None:
             return [], {}
