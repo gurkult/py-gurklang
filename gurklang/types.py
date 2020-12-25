@@ -160,10 +160,19 @@ class Atom:
             return _atom_cache[value]
         rv = object.__new__(cls)
         rv.__init__(value)
+        _atom_cache[value] = rv
         return rv
 
     def __init__(self, value: str):
         self.value = value
+
+    def __repr__(self):
+        return f"Atom({self.value!r})"
+
+    def __eq__(self, other):
+        if not isinstance(other, Atom):
+            return NotImplemented
+        return self.value == other.value
 
     @staticmethod
     def make(name: str) -> Atom:
