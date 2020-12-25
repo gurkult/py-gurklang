@@ -57,9 +57,9 @@ def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instructi
         if token.name == "INT":
             yield Put(Int(int(token.value)))
         elif token.name == "NAME":
-            yield Put(Atom.make(token.value))
+            yield Put(Atom(token.value))
         elif token.name == "ATOM":
-            yield Put(Atom.make(":" + token.value))
+            yield Put(Atom(":" + token.value))
         elif token.name == "LPAR":
             yield from _parse_vec(source, token_stream)
         elif token.name in ["STR_D", "STR_S"]:
@@ -110,7 +110,7 @@ def _parse_codeblock(
             yield CallByName(token.value)
 
         elif token.name == "ATOM":
-            yield Put(Atom.make(token.value[1:]))
+            yield Put(Atom(token.value[1:]))
 
         elif token.name in ["STR_D", "STR_S"]:
             yield Put(Str(ast.literal_eval(token.value)))

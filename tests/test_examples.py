@@ -2,15 +2,19 @@ from pytest import raises
 import time
 import gurklang.vm as vm
 from gurklang.parser import parse
-from gurklang.types import Int
+from gurklang.types import Instruction, Int
 
 
 def run(code):
+    return irun(*parse(code))
+
+
+def irun(*instructions: Instruction):
     start_time = time.time()
     def on_timeout_bail(*_):
         if time.time() >= start_time + 1:
-            raise TimeoutError(code)
-    return vm.run_with_middleware(parse(code), on_timeout_bail).stack
+            raise TimeoutError
+    return vm.run_with_middleware(instructions, on_timeout_bail).stack
 
 
 # Meta-test:

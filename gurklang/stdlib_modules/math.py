@@ -15,7 +15,7 @@ def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return ([Atom.make("false"), Atom.make("true")][x.value < y.value], rest), scope
+    return ([Atom("false"), Atom("true")][x.value < y.value], rest), scope
 
 
 @module.register_simple("+")

@@ -90,4 +90,4 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
 @module.register_simple("type")
 def get_type(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
-    return (Atom.make(head.tag), rest), scope
+    return (Atom(head.tag), rest), scope

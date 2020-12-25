@@ -146,7 +146,6 @@ _atom_cache: Dict[str, Atom] = {}
 
 
 _bool = bool
-@dataclass(eq=False)
 class Atom:
     """
     Atom, like :true
@@ -154,22 +153,27 @@ class Atom:
     Atoms are cached and compared by identity.
     """
     value: str
-    _original: _bool = False
     tag: ClassVar[Literal["atom"]] = "atom"
 
-    def __post_init__(self):
-        if not self._original:
-            raise RuntimeError(f"Atoms must be acquired via the `Atom.make` method")
+    def __new__(cls, value: str):
+        if value in _atom_cache:
+            return _atom_cache[value]
+        rv = object.__new__(cls)
+        rv.__init__(value)
+        return rv
+
+    def __init__(self, value: str):
+        self.name = value
 
     @staticmethod
     def make(name: str) -> Atom:
         if name not in _atom_cache:
-            _atom_cache[name] = Atom(name, True)
+            _atom_cache[name] = Atom(name)
         return _atom_cache[name]
 
     @staticmethod
     def bool(x: _bool) -> Atom:
-        return Atom.make("true" if x else "false")
+        return Atom("true" if x else "false")
 
 
 @dataclass(frozen=True)

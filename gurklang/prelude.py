@@ -153,19 +153,19 @@ def equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     elif x.tag == "atom":
         fail(f"cannot compare atoms. Use `is` instead")
     elif x.tag in ("str", "int", "code") and x == y:
-        return (Atom.make("true"), rest), scope
+        return (Atom("true"), rest), scope
     elif x.tag == "vec" and y.tag == "vec":
         return (Atom.bool(tuple_equals(x, y, fail)), rest), scope
-    return (Atom.make("false"), rest), scope
+    return (Atom("false"), rest), scope
 
 
 @module.register_simple("not")
 def not_(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
-    if head is Atom.make("true"):
-        return (Atom.make("false"), rest), scope
-    elif head is Atom.make("false"):
-        return (Atom.make("true"), rest), scope
+    if head is Atom("true"):
+        return (Atom("false"), rest), scope
+    elif head is Atom("false"):
+        return (Atom("true"), rest), scope
     else:
         fail(f"{render_value_as_source(head)} is not a boolean")
 
@@ -237,9 +237,9 @@ module.add("!", Code([CallByValue()], closure=None, name="!", flags=CodeFlags.PA
 @module.register_simple("if")
 def if_(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (else_, (then, (condition, rest))) = stack
-    if condition is Atom.make("true"):
+    if condition is Atom("true"):
         return (then, rest), scope
-    elif condition is Atom.make("false"):
+    elif condition is Atom("false"):
         return (else_, rest), scope
     else:
         fail(f"{condition} is not a boolean (:true/:false)")
@@ -251,7 +251,7 @@ def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
     (fn, rest) = stack
     if fn.tag not in ["code", "native"]:
         fail(f"{fn} is not a function")
-    sentinel = Atom.make("{, sentinel}")
+    sentinel = Atom("{, sentinel}")
     instructions = [Put(sentinel), Put(fn), CallByValue()]
     code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--spreader")
     return (code, rest), scope
@@ -260,7 +260,7 @@ def __spread_vec(stack: T[V, S], scope: Scope, fail: Fail):
 @make_simple()
 def __collect_vec(stack: T[V, S], scope: Scope, fail: Fail):
     head, stack = stack  # type: ignore
-    sentinel = Atom.make("{, sentinel}")
+    sentinel = Atom("{, sentinel}")
     elements = []
     while head is not sentinel:
         elements.append(head)
@@ -377,7 +377,7 @@ def _stack_extend(stack: Stack, elems: Iterable[Value]) -> Stack:
 
 
 def _parse_cases(stack: Stack, fail: Fail) -> Tuple[Stack, Sequence[Value], Sequence[Value]]:
-    sentinel = Atom.make('{case sentinel}')
+    sentinel = Atom('{case sentinel}')
     patterns = []
     actions = []
     is_pattern = False
@@ -409,7 +409,7 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
         new_stack, new_variables = matched
         insns = list(action.instructions)
         for k, v in new_variables.items():
-            insns[:0] = [Put(v), CallByValue(), Put(Atom.make(k)), Put(var), CallByValue()]
+            insns[:0] = [Put(v), CallByValue(), Put(Atom(k)), Put(var), CallByValue()]
         action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
         return (action, new_stack), scope
     return stack, scope
@@ -417,7 +417,7 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
 
 @make_simple()
 def __get_case(stack: T[V, S], scope: Scope, fail: Fail):
-    sentinel = Atom.make('{case sentinel}')
+    sentinel = Atom('{case sentinel}')
     fun, rest = stack
     return (fun, (sentinel, rest)), scope
 
@@ -470,13 +470,13 @@ def _import_cherrypick(scope: Scope, module: Module, names: Iterable[str]):
 
 
 def _get_imported_members(scope: Scope, module: Module, import_options: Value):
-    if import_options is Atom.make("all"):
+    if import_options is Atom("all"):
         return _import_all(scope, module)
 
-    elif import_options is Atom.make("qual"):
+    elif import_options is Atom("qual"):
         return _import_qualified(scope, module, module.name)
 
-    elif import_options is Atom.make("prefix"):
+    elif import_options is Atom("prefix"):
         return _import_prefixed(scope, module, module.name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("as:"):

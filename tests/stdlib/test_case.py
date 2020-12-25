@@ -51,7 +51,7 @@ def test_case_does_not_recursion_error():
         ()  { 1 - f }
       } case
     } :f jar
-    3000 f
+    1001 f
     """) == number_stack(11)
 
 
