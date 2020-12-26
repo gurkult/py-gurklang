@@ -140,8 +140,9 @@ def inline_error_message(message: str):
 
 
 ENTER = chr(13)
-BACKSPACE = chr(127)
+BACKSPACE = (chr(127), chr(0x08))
 
+is_backspace = BACKSPACE.__contains__
 
 def _next_backslash_step(accumulated: str):
     char = click.getchar(echo=False)
@@ -156,7 +157,7 @@ def _next_backslash_step(accumulated: str):
         else:
             inline_error_message("not found")
             return True, accumulated
-    elif char == BACKSPACE:
+    elif is_backspace(char):
         if accumulated == "":
             backspace()
             return True, ""
@@ -193,7 +194,7 @@ def _process_next_character(old_line: str):
         new_line = old_line + char
     elif char == "\t":
         new_line = old_line + "  "
-    elif char == BACKSPACE:
+    elif is_backspace(char):
         new_line = old_line[:-1]
     else:
         new_line = old_line
