@@ -232,16 +232,18 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
     # TODO: refactor this method
     lines = []
 
-    line = ""  # `line` will be reassigned to keep the indentation level in multiline blocks
+    indentation = ""  # `line` will be reassigned to keep the indentation level in multiline blocks
     while True:
         prompt = repl._prompt if lines == [] else repl._multiline_prompt
         print(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET, end="")
+        line = indentation
+        print(line, end="")
         try:
-            print(line, end="")
             while True:
                 done, line = _process_next_character(line)
                 if done:
                     break
+            lines.append(line)
         except (EOFError, KeyboardInterrupt):
             print()
             if lines == []:
@@ -249,18 +251,17 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
             else:
                 return ""
 
-        lines.append(line)
-
         try:
             parse("\n".join(lines))
         except ParseError as e:
             if not e.is_eof():
                 on_parse_error(e)
                 return ""
-            last_indent_size = len(lines[-1]) - len(lines[-1].lstrip())
-            line = " " * last_indent_size
         else:
             break
+
+        last_indent_size = len(lines[-1]) - len(lines[-1].lstrip())
+        indentation = " " * last_indent_size
     return "\n".join(lines)
 
 
