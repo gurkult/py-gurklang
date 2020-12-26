@@ -42,6 +42,14 @@ def repr_stack(stack) -> List[Value]:
     return [*unwrap_stack(stack)][::-1]
 
 
+def stringify_stack(stack: Stack):
+    if stack is None:
+        return "()"
+    else:
+        head, rest = stack
+        return f"({render_value_as_source(head)} {stringify_stack(rest)})"
+
+
 def repr_scope(scope: Scope) -> Dict[str, Any]:
     d = dict(scope.values.items())
     if scope.parent is not None:
