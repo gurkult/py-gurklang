@@ -3,7 +3,10 @@ from .types import Atom, Scope, Stack, Value, Vec
 from typing import Any, Iterator, List, Dict, Literal
 
 
-def stringify_value(v: Value):
+def stringify_value(v: Value, depth: int = 0):
+    if depth >= 42:
+        return "∞"
+
     if v.tag == "str":
         return v.value
     elif v.tag == "int":
@@ -18,18 +21,23 @@ def stringify_value(v: Value):
         else:
             return v.name
     elif v.tag == "vec":
-        return "(" + " ".join(map(stringify_value, v.values)) + ")"
+        return "(" + " ".join(render_value_as_source(x, depth + 1) for x in v.values) + ")"
     elif v.tag == "native":
         return f"`{v.name}`"
+    elif v.tag == "box":
+        return f"`box({v.id})`"
     else:
         raise RuntimeError(v)
 
 
-def render_value_as_source(v: Value):
+def render_value_as_source(v: Value, depth: int = 0):
+    if depth >= 42:
+        return "∞"
+
     if v.tag == "str":
         return repr(v.value)
     else:
-        return stringify_value(v)
+        return stringify_value(v, depth + 1)
 
 
 def unwrap_stack(stack: Stack) -> Iterator[Value]:
@@ -42,12 +50,14 @@ def repr_stack(stack) -> List[Value]:
     return [*unwrap_stack(stack)][::-1]
 
 
-def stringify_stack(stack: Stack):
+def stringify_stack(stack: Stack, max_depth: int = 0):
     if stack is None:
         return "()"
+    elif max_depth <= 0:
+        return "∞"
     else:
         head, rest = stack
-        return f"({render_value_as_source(head)} {stringify_stack(rest)})"
+        return f"({render_value_as_source(head)} {stringify_stack(rest, max_depth - 1)})"
 
 
 def repr_scope(scope: Scope) -> Dict[str, Any]:
