@@ -3,6 +3,7 @@ Read Eval Print Loop
 
 The essential interactive programming tool!
 """
+from __future__ import annotations
 from gurklang.vm_utils import render_value_as_source
 import sys
 import traceback
@@ -25,8 +26,8 @@ def print_red(*xs):
 
 
 def _display_parse_error(e: ParseError):
-    if e.is_eof:
-        print_red("Unexpected EOF while parsing", e.while_parsing_what)
+    if e.is_eof():
+        print_red("Unexpected EOF while parsing", e.while_parsing_what, repr(e.token))
     else:
         print_red(
             f"Syntax error at {e.token.position} in token {e.token.value}"
@@ -92,6 +93,7 @@ DEFAULT_PRELUDE = R"""
 :boxes      ( box <- -> )                      import
 
 
+"" box :repl[ml-prompt]     var
 "" box :repl[prompt]        var
 "" box :repl[before-output] var
 "" box :repl[after-output]  var
@@ -99,40 +101,44 @@ DEFAULT_PRELUDE = R"""
 
 
 {
+  repl[ml-prompt]     "... "
   repl[prompt]        ">>> "
   repl[before-output] ""
   repl[after-output]  ""
   repl[before-stack]  "<-- "
-  <- <- <- <-
+  <- <- <- <- <-
 }
 :repl[style:default] jar
 
 
 {
+  repl[ml-prompt]     "▋ "
   repl[prompt]        "│ "
   repl[before-output] "└───────────────────\n"
   repl[after-output]  ""
   repl[before-stack]  "├─"
-  <- <- <- <-
+  <- <- <- <- <-
 }
 :repl[style:box] jar
 
 
 {
+  repl[ml-prompt]     "▋\n▋ "
   repl[prompt]        "│\n│ "
   repl[before-output] "└───────────────────\n"
   repl[after-output]  "\n"
   repl[before-stack]  "│\n╞═"
-  <- <- <- <-
+  <- <- <- <- <-
 }
 :repl[style:box-wide] jar
 
 
 {
-  repl[prompt]        "In:\n"
-  repl[before-output] "Out:\n"
+  repl[ml-prompt]     "│ "
+  repl[prompt]        "In:\n  "
+  repl[before-output] "Out:\n  "
   repl[after-output]  "\n"
-  repl[before-stack]  "Stack:\n"
+  repl[before-stack]  "Stack:\n  "
   <- <- <- <-
 }
 :repl[style:in-out] jar
@@ -160,6 +166,32 @@ class ExitDebug(BaseException):
     pass
 
 
+def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]) -> str:
+    lines = []
+    while True:
+        try:
+            prompt = repl._prompt if lines == [] else repl._multiline_prompt
+            line = input(Fore.CYAN + prompt + Fore.RESET)
+        except (EOFError, KeyboardInterrupt):
+            print()
+            if lines == []:
+                return "quit!"
+            else:
+                return ""
+
+        lines.append(line)
+
+        try:
+            parse("\n".join(lines))
+        except ParseError as e:
+            if not e.is_eof():
+                on_parse_error(e)
+                return ""
+        else:
+            break
+    return "\n".join(lines)
+
+
 class Repl:
     stack: Stack
     scope: Scope
@@ -184,15 +216,8 @@ class Repl:
     def run(self):
         action = "continue"
         while action != "stop":
-            command = self._get_input()
+            command = get_multiline_input(self, _display_parse_error)
             action = self._process_command(command)
-
-    def _get_input(self):
-        try:
-            return input(Fore.CYAN + self._prompt + Fore.RESET)
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return "quit!"
 
     def _process_command(self, command: str):
         return (
@@ -322,6 +347,10 @@ class Repl:
     @property
     def _prompt(self) -> str:
         return self._get_str_config_value("prompt")
+
+    @property
+    def _multiline_prompt(self) -> str:
+        return self._get_str_config_value("ml-prompt")
 
     @property
     def _is_stack_display_on(self) -> bool:
