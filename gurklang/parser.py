@@ -2,19 +2,17 @@ from typing import Any, Iterator, List, Generator, Tuple
 from gurklang.parser_utils import TokenStream, build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
-import itertools
 
 
 
 tokenizer = build_tokenizer(
     (
-        ("LPAR", r"\("),
-        ("RPAR", r"\)"),
-        ("LBR", r"\{"),
-        ("RBR", r"\}"),
+        ("LEFT_PAREN", r"\("),
+        ("RIGHT_PAREN", r"\)"),
+        ("LEFT_BRACE", r"\{"),
+        ("RIGHT_BRACE", r"\}"),
         ("INT", r"[+-]\d+"),
-        ("STR_D", r'"(?:\\.|[^"])*"'),
-        ("STR_S", r"'(?:\\.|[^'])*'"),
+        ("STRING", r'"(?:\\.|[^"])*"' + r"|'(?:\\.|[^'])*'"),
         ("ATOM", r"\:[^\"'(){}# \n\t]+"),
         ("NAME", r"[^\"'(){}# \n\t]+"),
     ),
@@ -40,19 +38,18 @@ class ParseError(Exception):
         super().__init__(token)
 
     def is_eof(self):
-        # This is related to the RBR } hack in the `parse` function
+        # This is related to the RIGHT_BRACE } hack in the `parse` function
         return self.token.position >= len(self.source) - 1
 
 
-
-def _lex(source: str) -> TokenStream[TokenName]:
+def lex(source: str) -> TokenStream[TokenName]:
     return tokenizer.tokenize(source)
 
 
 def _parse_vec(source: str, token_stream: TokenStream[TokenName]) -> Iterator[Instruction]:
     n = 0
     for token in token_stream:
-        if token.name == "RPAR":
+        if token.name == "RIGHT_PAREN":
             break
 
         if token.name == "INT":
@@ -61,11 +58,11 @@ def _parse_vec(source: str, token_stream: TokenStream[TokenName]) -> Iterator[In
             yield Put(Atom(token.value))
         elif token.name == "ATOM":
             yield Put(Atom(token.value))
-        elif token.name == "LPAR":
+        elif token.name == "LEFT_PAREN":
             yield from _parse_vec(source, token_stream)
-        elif token.name in ["STR_D", "STR_S"]:
+        elif token.name == "STRING":
             yield Put(Str(ast.literal_eval(token.value)))
-        elif token.name == "LBR":
+        elif token.name == "LEFT_BRACE":
             yield PutCode(list(_parse_codeblock(source, token_stream)))
         else:
             raise ParseError(source, "a tuple literal", token_stream.last_token)
@@ -90,10 +87,10 @@ def _parse_codeblock(
     token_stream: TokenStream[TokenName]
 ) -> Generator[Instruction, None, Tuple[int, int]]:
     for token in token_stream:
-        if token.name == "RBR":
+        if token.name == "RIGHT_BRACE":
             return token.span
 
-        elif token.name == "LBR":
+        elif token.name == "LEFT_BRACE":
             # put_code is distinct from put, because the runtime
             # will attach a closure to the code
 
@@ -101,7 +98,7 @@ def _parse_codeblock(
 
             yield PutCode(elements, source_code=source[token.position:end_pos])
 
-        elif token.name == "LPAR":
+        elif token.name == "LEFT_PAREN":
             yield from _parse_vec(source, token_stream)
 
         elif token.name == "INT":
@@ -113,7 +110,7 @@ def _parse_codeblock(
         elif token.name == "ATOM":
             yield Put(Atom(token.value[1:]))
 
-        elif token.name in ["STR_D", "STR_S"]:
+        elif token.name == "STRING":
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
@@ -123,9 +120,9 @@ def _parse_codeblock(
 
 
 def _parse_stream(source: str, token_stream: TokenStream[TokenName]) -> Iterator[Instruction]:
-    token_stream.push(Token("RBR", "}", len(source)))
+    token_stream.push(Token("RIGHT_BRACE", "}", len(source)))
     return _parse_codeblock(source, token_stream)
 
 
 def parse(source: str) -> List[Instruction]:
-    return list(_parse_stream(source, _lex(source)))
+    return list(_parse_stream(source, lex(source)))

@@ -7,16 +7,16 @@ from __future__ import annotations
 from gurklang.vm_utils import render_value_as_source, stringify_stack
 import sys
 import traceback
-from typing import Any, Callable, Optional, TextIO, Tuple
+from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
 
-from colorama import init, Fore, Style
+from colorama import init, Fore, Style, Cursor
 Fore: Any
 Style: Any
 init()
 
 from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value
 from .vm import call_with_middleware, run, call, make_scope
-from .parser import parse, ParseError
+from .parser import parse, lex, ParseError
 
 
 def print_red(*xs):
@@ -166,18 +166,55 @@ class ExitDebug(BaseException):
     pass
 
 
+def _colorize_line(source_line: str) -> Iterator[str]:
+    last_end_pos = -1
+    for token in lex(source_line):
+        if token.position > last_end_pos + 1:  # we've got whitespace
+            ws = source_line[last_end_pos + 1 : token.position]
+            yield Fore.LIGHTGREEN_EX + Style.DIM + ws + Style.RESET_ALL + Fore.RESET
+
+        if token.name == "STRING":
+            yield Fore.GREEN + token.value + Fore.RESET
+
+        elif token.name == "INT":
+            yield Fore.CYAN + token.value + Fore.RESET
+
+        elif token.name == "ATOM":
+            yield Fore.RED + token.value + Fore.RESET
+
+        elif token.name == "NAME":
+            yield Style.BRIGHT + Fore.YELLOW + token.value + Fore.RESET + Style.RESET_ALL
+
+        else:
+            yield token.value
+
+        last_end_pos = token.position + len(token.value) - 1
+
+    if last_end_pos == -1:  # no tokens => line is all whitespace
+        yield Fore.WHITE + Style.DIM + source_line + Style.RESET_ALL + Fore.RESET
+
+
+def colorize_source_line(source_line: str):
+    return "".join(_colorize_line(source_line))
+
+
 def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]) -> str:
     lines = []
     while True:
+        prompt = repl._prompt if lines == [] else repl._multiline_prompt
         try:
-            prompt = repl._prompt if lines == [] else repl._multiline_prompt
-            line = input(Fore.CYAN + prompt + Fore.RESET)
+            line = input(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET)
         except (EOFError, KeyboardInterrupt):
             print()
             if lines == []:
                 return "quit!"
             else:
                 return ""
+
+        # go back to the position where we started typing:
+        print(Cursor.UP() + Cursor.FORWARD(len(prompt)), end="")
+
+        print(colorize_source_line(line))
 
         lines.append(line)
 
