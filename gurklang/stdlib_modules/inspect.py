@@ -1,10 +1,9 @@
 import pprint
-import math
 
 from typing import Sequence, TypeVar, Tuple
-from ..vm_utils import render_value_as_source, stringify_value
+from ..vm_utils import render_value_as_source
 from ..builtin_utils import Module, Fail
-from ..types import Atom, Code, Instruction, State, Value, Stack, Scope, Int, Vec
+from ..types import Atom, Instruction, State, Value, Stack, Scope, Int, Vec
 
 from collections import deque
 
@@ -19,7 +18,8 @@ def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
     (code, rest) = stack
     if code.tag != "code":
         fail(f"{code} is not code")
-    pprint.pprint(code.instructions)
+    for i in code.instructions:
+        print(render_value_as_source(i.as_vec()))
     return rest, scope
 
 
@@ -53,34 +53,16 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
         print(f"Disassembling function {uid}:")
 
         for instruction in instructions:
-            if instruction.tag == "put":
-                if instruction.value.tag == "code":
-                    code_id = get_code_id(instruction.value.instructions)  # type: ignore
-                    print(f"Put (code {code_id})")
-                else:
-                    print(f"Put {instruction.value}")
-
-            elif instruction.tag == "call":
-                print(f"Call {instruction.function_name}")
-
-            elif instruction.tag == "call_by_value":
-                print("CallByValue (some code)")
+            if instruction.tag == "put" and instruction.value.tag == "code":
+                code_id = get_code_id(instruction.value.instructions)  # type: ignore
+                print(f"(:Put [code #{code_id}])")
 
             elif instruction.tag == "put_code":
                 code_id = get_code_id(instruction.instructions)
-                print(f"PutCode (code #{code_id})")
+                print(f"(:PutCode [code #{code_id}])")
 
-            elif instruction.tag == "make_vec":
-                print(f"MakeVec of size {instruction.size}")
-
-            elif instruction.tag == "make_scope":
-                if instruction.parent is None:
-                    print("MakeScope with no parent")
-                else:
-                    print(f"MakeScope from closure with keys: {' '.join(instruction.parent.values.keys())}")
-
-            elif instruction.tag == "pop_scope":
-                print("PopScope")
+            else:
+                print(render_value_as_source(instruction.as_vec()))
         print()
 
     return rest, scope
