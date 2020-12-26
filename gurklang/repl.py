@@ -89,50 +89,62 @@ DEFAULT_PRELUDE = R"""
 :inspect    :prefix                            import
 :coro       :prefix                            import
 :math       ( < + - * / % %make %+ %- %* %/ )  import
+:boxes      ( box <- -> )                      import
+
+
+"" box :repl[prompt]        var
+"" box :repl[before-output] var
+"" box :repl[after-output]  var
+"" box :repl[before-stack]  var
 
 
 {
-  ">>> " :repl[prompt]        var
-  ""     :repl[before-output] var
-  ""     :repl[after-output]  var
-  "<-- " :repl[before-stack]  var
+  repl[prompt]        ">>> "
+  repl[before-output] ""
+  repl[after-output]  ""
+  repl[before-stack]  "<-- "
+  <- <- <- <-
 }
-parent-scope :repl[style:default] jar
+:repl[style:default] jar
 
 
 {
-  "│ "                     :repl[prompt]        var
-  "└───────────────────\n" :repl[before-output] var
-  ""                       :repl[after-output]  var
-  "├─"                     :repl[before-stack]  var
+  repl[prompt]        "│ "
+  repl[before-output] "└───────────────────\n"
+  repl[after-output]  ""
+  repl[before-stack]  "├─"
+  <- <- <- <-
 }
-parent-scope :repl[style:box] jar
+:repl[style:box] jar
 
 
 {
-  "│\n│ "                     :repl[prompt]        var
-  "└───────────────────\n" :repl[before-output] var
-  "\n"                       :repl[after-output]  var
-  "│\n╞═"                     :repl[before-stack]  var
+  repl[prompt]        "│\n│ "
+  repl[before-output] "└───────────────────\n"
+  repl[after-output]  "\n"
+  repl[before-stack]  "│\n╞═"
+  <- <- <- <-
 }
-parent-scope :repl[style:box-wide] jar
+:repl[style:box-wide] jar
 
 
 {
-  "In:\n" :repl[prompt]        var
-  "Out:\n" :repl[before-output] var
-  "\n"      :repl[after-output]  var
-  "Stack:\n" :repl[before-stack]  var
+  repl[prompt]        "In:\n"
+  repl[before-output] "Out:\n"
+  repl[after-output]  "\n"
+  repl[before-stack]  "Stack:\n"
+  <- <- <- <-
 }
-parent-scope :repl[style:in-out] jar
+:repl[style:in-out] jar
 
 
-{ :true :repl[display-stack] var }
-parent-scope :show-stack jar
+:false box :repl[display-stack] var
 
+{ repl[display-stack] :true <- }
+:show-stack jar
 
-{ :false :repl[display-stack] var }
-parent-scope :hide-stack jar
+{ repl[display-stack] :false <- }
+:hide-stack jar
 
 
 repl[style:default]
@@ -282,13 +294,13 @@ class Repl:
         return head
 
     def _get_str_config_value(self, label: str) -> str:
-        str_ = self._run_code_for_single_value(f"repl[{label}]")
+        str_ = self._run_code_for_single_value(f"repl[{label}] ->")
         if str_.tag != "str":
             raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
         return str_.value
 
     def _get_bool_config_value(self, label: str) -> bool:
-        atom = self._run_code_for_single_value(f"repl[{label}]")
+        atom = self._run_code_for_single_value(f"repl[{label}] ->")
         if atom.tag != "atom":
             raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
         if atom.value not in ["true", "false"]:
