@@ -14,18 +14,18 @@ env/bin/python -m pip install -r requirements.txt
 ```
 ---
 
-# Test
-
-```bash
-env/bin/python -m pytest
-```
-
----
-
 # Open REPL
 
 ```bash
 env/bin/python -m gurklang
+```
+
+---
+
+# Test
+
+```bash
+env/bin/python -m pytest
 ```
 
 ---
