@@ -223,7 +223,7 @@ def test_equivalent_implementaiton_of_change():
 
 
 @forall(Int, Int)
-def test_when_transaction_is_in_progess_():
+def test_when_transaction_is_in_progess_old_value_is_seen():
     """
     :boxes   ( box -!> -> <- <= <[ ]> ) import
     :x var :y var
