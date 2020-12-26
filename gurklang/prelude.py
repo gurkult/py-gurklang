@@ -453,7 +453,7 @@ def _make_name_getter(lookup: Dict[str, Value], name: str):
         function = lookup[name.value]
         return state.with_stack((function, rest))
 
-    return Code([Put(NativeFunction(name_getter, name)), CallByValue()], None, CodeFlags.PARENT_SCOPE)
+    return Code([Put(NativeFunction(name_getter, name)), CallByValue(), CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
 
 def _import_all(scope: Scope, module: Module):
