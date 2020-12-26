@@ -9,6 +9,8 @@ import sys
 import traceback
 from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
 
+import click
+
 from colorama import init, Fore, Style, Cursor
 Fore: Any
 Style: Any
@@ -190,31 +192,55 @@ def _colorize_line(source_line: str) -> Iterator[str]:
 
         last_end_pos = token.position + len(token.value) - 1
 
-    if last_end_pos == -1:  # no tokens => line is all whitespace
-        yield Fore.WHITE + Style.DIM + source_line + Style.RESET_ALL + Fore.RESET
+    if last_end_pos != len(source_line):  # some whitespace is left
+        yield Fore.WHITE + Style.DIM + source_line[last_end_pos + 1:] + Style.RESET_ALL + Fore.RESET
 
 
 def colorize_source_line(source_line: str):
     return "".join(_colorize_line(source_line))
 
 
+ENTER = chr(13)
+BACKSPACE = chr(127)
+
+
 def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]) -> str:
+    # TODO: refactor this method
     lines = []
+
+    line = ""  # `line` will be reassigned to keep the indentation level in multiline blocks
     while True:
         prompt = repl._prompt if lines == [] else repl._multiline_prompt
+        print(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET, end="")
         try:
-            line = input(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET)
+            print(line, end="")
+            while True:
+                old_line = line
+                char = click.getchar(echo=False)
+
+                if len(char) == 1 and char.isprintable():
+                    line += char
+
+                if char == "\t":
+                    line += "  "
+
+                if char == BACKSPACE:
+                    line = line[:-1]
+
+                print("\b" * len(old_line), end="")
+                print(" " * len(old_line), end="")
+                print("\b" * len(old_line), end="")
+                print(colorize_source_line(line), end="")
+
+                if char == ENTER:
+                    print()
+                    break
         except (EOFError, KeyboardInterrupt):
             print()
             if lines == []:
                 return "quit!"
             else:
                 return ""
-
-        # go back to the position where we started typing:
-        print(Cursor.UP() + Cursor.FORWARD(len(prompt)), end="")
-
-        print(colorize_source_line(line))
 
         lines.append(line)
 
@@ -224,6 +250,8 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
             if not e.is_eof():
                 on_parse_error(e)
                 return ""
+            last_indent_size = len(lines[-1]) - len(lines[-1].lstrip())
+            line = " " * last_indent_size
         else:
             break
     return "\n".join(lines)
