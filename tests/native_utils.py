@@ -1,13 +1,14 @@
 from functools import wraps
 from textwrap import dedent
-from gurklang.vm import run
+from gurklang.vm import run, run_with_middleware
 from gurklang.parser import parse
-from gurklang.types import Int, Str, Vec
+from gurklang.types import Instruction, Int, Stack, Str, Vec
+from gurklang.vm_utils import stringify_stack, render_value_as_source
 
 from hypothesis import given, infer
 from hypothesis.strategies import composite, integers, text, lists, SearchStrategy
 from gurklang.types import Atom, Put, Value
-from typing import Callable, Union, Type
+from typing import Callable, Sequence, Union, Type
 
 
 _prelude = parse("""
@@ -27,11 +28,24 @@ _prelude = parse("""
 """)
 
 
+def _program_evolution(parsed: Sequence[Instruction]) -> str:
+    result = [""]
+    def print_step(i: Instruction, old_stack: Stack, new_stack: Stack):
+        result.append(render_value_as_source(i.as_vec()))
+        result.append(stringify_stack(new_stack))
+        result.append("")
+    run_with_middleware(parsed, middleware=print_step)
+    return "\n".join(result)
+
+
 def _run_test(*xs: Value, code: str, name: str):
-    state = run(_prelude + [Put(x) for x in xs] + parse(code))  # type: ignore
-    assert state.stack is not None, name
+    parsed = _prelude + [Put(x) for x in xs] + parse(code)  # type: ignore
+    state = run(parsed)
+    if state.stack is None:
+        assert False, _program_evolution(parsed)
     (head, _) = state.stack
-    assert head == Atom("true"), name
+    if head != Atom("true"):
+        assert False, _program_evolution(parsed)
 
 
 def forall(*types: Union[Type[Value], SearchStrategy]):
