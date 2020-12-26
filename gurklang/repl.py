@@ -200,14 +200,97 @@ def colorize_source_line(source_line: str):
     return "".join(_colorize_line(source_line))
 
 
+def backspace(size: int = 1):
+    click.echo("\b" * size, nl=False)
+    click.echo(" " * size, nl=False)
+    click.echo("\b" * size, nl=False)
+
+
+def inline_error_message(message: str):
+    click.secho(message, color=True, fg="white", bg="red", nl=False)
+    click.getchar(echo=False)
+    backspace(len(message))
+
+
 ENTER = chr(13)
 BACKSPACE = chr(127)
+
+
+BACKSLASH_MAPPING = {
+    "lambda": "λ",
+    "le": "≤",
+    "ge": "≥",
+    "empty-set": "∅",
+    "in": "∈",
+    "not-in": "∉",
+    "sub": "⊂",
+    "nsub": "⊄",
+    "sube": "⊂",
+    "union": "∪",
+    "inters": "∩",
+    "nsube": "⊈",
+    "ne": "≠",
+    "approx": "≈",
+    "compose": "∘",
+    "forall": "∀",
+    "exists": "∃",
+    "not": "¬",
+    "or": "∨",
+    "and": "∧",
+    "rarr": "→",
+    "larr": "←",
+    "T": "⊤",
+    "F": "⊥",
+}
+
+
+def _next_backslash_step(accumulated: str):
+    char = click.getchar(echo=False)
+    if char == "\\":
+        if accumulated == "":
+            backspace()
+            return True, "\\"
+    elif char in (" ", ENTER):
+        if accumulated in BACKSLASH_MAPPING:
+            backspace(len(accumulated) + 1)
+            return True, BACKSLASH_MAPPING[accumulated]
+        else:
+            inline_error_message("not found")
+            return True, accumulated
+    elif char == BACKSPACE:
+        if accumulated == "":
+            backspace()
+            return True, ""
+        else:
+            return False, accumulated[:-1]
+    elif len(char) == 1 and char.isprintable():
+        return False, accumulated + char
+    return False, accumulated
+
+
+def _process_backslash_escape() -> str:
+    accumulated = ""
+
+    click.secho("\\", color=True, fg="white", bg="blue", nl=False)
+
+    while True:
+        done, new_acc = _next_backslash_step(accumulated)
+        if done:
+            return new_acc
+
+        backspace(len(accumulated) + 1)
+        bg, bold = ("green", True) if new_acc in BACKSLASH_MAPPING else ("blue", False)
+        click.secho("\\" + new_acc, color=True, bg=bg, bold=bold, nl=False)
+
+        accumulated = new_acc
 
 
 def _process_next_character(old_line: str):
     char = click.getchar(echo=False)
 
-    if len(char) == 1 and char.isprintable():
+    if char == "\\":
+        new_line = old_line + _process_backslash_escape()
+    elif len(char) == 1 and char.isprintable():
         new_line = old_line + char
     elif char == "\t":
         new_line = old_line + "  "
@@ -216,9 +299,7 @@ def _process_next_character(old_line: str):
     else:
         new_line = old_line
 
-    print("\b" * len(old_line), end="")
-    print(" " * len(old_line), end="")
-    print("\b" * len(old_line), end="")
+    backspace(len(old_line))
     print(colorize_source_line(new_line), end="")
 
     if char == ENTER:
