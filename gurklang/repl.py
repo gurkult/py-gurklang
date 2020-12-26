@@ -123,7 +123,7 @@ DEFAULT_PRELUDE = R"""
 
 
 {
-  repl[ml-prompt]     "▋\n▋ "
+  repl[ml-prompt]     "▋ "
   repl[prompt]        "│\n│ "
   repl[before-output] "└───────────────────\n"
   repl[after-output]  "\n"
