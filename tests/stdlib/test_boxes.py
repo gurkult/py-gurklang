@@ -238,3 +238,41 @@ def test_when_transaction_is_in_progess_():
 
     {b-inside ->  b ->}, {x y}, =
     """
+
+
+@forall(Int, Int)
+def test_rollback_reverts_the_topmost_transaction():
+    """
+    :boxes ( box -> -!> <- <<< <[ ]> ) import
+    :x var :y var
+
+    x box :b var
+
+    b <[
+
+    b y <-
+
+    {b <<<}, ()   =
+    {b ->},  {x}, =
+    {b -!>}, {x}, =
+    && &&
+    """
+
+
+@forall(Int, Int)
+def test_rollback_with_question_mark_also_pops_the_intermediate_result():
+    """
+    :boxes ( box -> -!> <- <<<? <[ ]> ) import
+    :x var :y var
+
+    x box :b var
+
+    b <[
+
+    b y <-
+
+    {b <<<?}, {y}, =
+    {b ->},   {x}, =
+    {b -!>},  {x}, =
+    && &&
+    """

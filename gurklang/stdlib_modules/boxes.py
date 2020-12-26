@@ -67,7 +67,7 @@ def write_to_box(state: State, fail: Fail):
 @module.register("<[")
 def begin_transaction(state: State, fail: Fail):
     if state.stack is None:
-        fail(f"calling `[[` on empty stack")
+        fail(f"calling `<[` on empty stack")
     (box, rest) = state.infinite_stack()
 
     if box.tag != "box":
@@ -83,13 +83,39 @@ def begin_transaction(state: State, fail: Fail):
 @module.register("]>")
 def commit(state: State, fail: Fail):
     if state.stack is None:
-        fail(f"calling `]]` on empty stack")
+        fail(f"calling `]>` on empty stack")
     (box, rest) = state.infinite_stack()
 
     if box.tag != "box":
         fail(f"{render_value_as_source(box)} is not a box")
 
     return state.with_stack(rest).commit_box(box.id)
+
+
+@module.register("<<<")
+def rollback(state: State, fail: Fail):
+    if state.stack is None:
+        fail(f"calling `<<<` on empty stack")
+    (box, rest) = state.infinite_stack()
+
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+
+    _value, state = state.with_stack(rest).pop_box(box.id)
+    return state
+
+
+@module.register("<<<?")
+def rollback_pop(state: State, fail: Fail):
+    if state.stack is None:
+        fail(f"calling `<<<` on empty stack")
+    (box, rest) = state.infinite_stack()
+
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+
+    value, state = state.with_stack(rest).pop_box(box.id)
+    return state.push(value)
 
 
 # not to create a circular dependency with prelude
