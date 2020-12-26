@@ -1,7 +1,7 @@
-from typing import List, Sequence, TypeVar, Tuple
+from typing import List, TypeVar, Tuple
 from ..vm_utils import stringify_value
 from ..builtin_utils import Module, Fail, make_simple
-from ..types import Atom, CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope, Int, Vec
+from ..types import CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope, Vec
 
 
 module = Module("coro")
