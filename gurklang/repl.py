@@ -5,13 +5,14 @@ The essential interactive programming tool!
 """
 from __future__ import annotations
 from gurklang.vm_utils import render_value_as_source, stringify_stack
+from .repl_constants import DEFAULT_PRELUDE, BACKSLASH_MAPPING
 import sys
 import traceback
 from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
 
 import click
 
-from colorama import init, Fore, Style, Cursor
+from colorama import init, Fore, Style
 Fore: Any
 Style: Any
 init()
@@ -87,81 +88,7 @@ class StdoutSniper:
         pass
 
 
-DEFAULT_PRELUDE = R"""
-:repl-utils :all                               import
-:inspect    :prefix                            import
-:coro       :prefix                            import
-:math       ( < + - * / % %make %+ %- %* %/ )  import
-:boxes      ( box <- -> )                      import
 
-
-"" box :repl[ml-prompt]     var
-"" box :repl[prompt]        var
-"" box :repl[before-output] var
-"" box :repl[after-output]  var
-"" box :repl[before-stack]  var
-
-
-{
-  repl[ml-prompt]     "... "
-  repl[prompt]        ">>> "
-  repl[before-output] ""
-  repl[after-output]  ""
-  repl[before-stack]  "<-- "
-  <- <- <- <- <-
-}
-:repl[style:default] jar
-
-
-{
-  repl[ml-prompt]     "▋ "
-  repl[prompt]        "│ "
-  repl[before-output] "└───────────────────\n"
-  repl[after-output]  ""
-  repl[before-stack]  "├─"
-  <- <- <- <- <-
-}
-:repl[style:box] jar
-
-
-{
-  repl[ml-prompt]     "▋ "
-  repl[prompt]        "│\n│ "
-  repl[before-output] "└───────────────────\n"
-  repl[after-output]  "\n"
-  repl[before-stack]  "│\n╞═"
-  <- <- <- <- <-
-}
-:repl[style:box-wide] jar
-
-
-{
-  repl[ml-prompt]     "│ "
-  repl[prompt]        "In:\n  "
-  repl[before-output] "Out:\n  "
-  repl[after-output]  "\n"
-  repl[before-stack]  "Stack:\n  "
-  <- <- <- <-
-}
-:repl[style:in-out] jar
-
-
-:false box :repl[display-stack] var
-
-{ repl[display-stack] :true <- }
-:show-stack jar
-
-{ repl[display-stack] :false <- }
-:hide-stack jar
-
-
-repl[style:default]
-hide-stack
-
-
-"Gurklang v0.0.1" println
-"---------------" println
-"""
 
 
 class ExitDebug(BaseException):
@@ -214,34 +141,6 @@ def inline_error_message(message: str):
 
 ENTER = chr(13)
 BACKSPACE = chr(127)
-
-
-BACKSLASH_MAPPING = {
-    "lambda": "λ",
-    "le": "≤",
-    "ge": "≥",
-    "empty-set": "∅",
-    "in": "∈",
-    "not-in": "∉",
-    "sub": "⊂",
-    "nsub": "⊄",
-    "sube": "⊂",
-    "union": "∪",
-    "inters": "∩",
-    "nsube": "⊈",
-    "ne": "≠",
-    "approx": "≈",
-    "compose": "∘",
-    "forall": "∀",
-    "exists": "∃",
-    "not": "¬",
-    "or": "∨",
-    "and": "∧",
-    "rarr": "→",
-    "larr": "←",
-    "T": "⊤",
-    "F": "⊥",
-}
 
 
 def _next_backslash_step(accumulated: str):
