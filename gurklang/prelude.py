@@ -140,7 +140,7 @@ def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (identifier, (value, rest)) = stack
     if identifier.tag != "atom":
         fail(f"{identifier} is not an atom")
-    fn = Code([Put(value)], name=identifier.value, closure=scope)
+    fn = Code([Put(value)], name=identifier.value, closure=scope, flags=CodeFlags.PARENT_SCOPE)
     return rest, scope.with_member(identifier.value, fn)
 
 
