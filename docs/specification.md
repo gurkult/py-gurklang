@@ -1,4 +1,4 @@
-# Gurklang almost-formal specification
+# Almost-formal specification
 
 ---
 
@@ -12,7 +12,7 @@ functional programming.
 
 A valid Gurklang program is a sequence of words, separated by spaces where necessary.
 
-A comment, like `# Incement i`, is considered whitespace.
+A comment, like `# Increment i`, is considered whitespace.
 
 Possible word types:
 
@@ -21,17 +21,19 @@ Possible word types:
 | Integer | sequence of digits, optionally preceded by `+` or `-` | `42` |
 | String | sequence of characters enclosed in `""` or `''`, following common escaping rules|`"hello\nworld"`|
 | Name | any sequence of non-whitespace characters other than `"'(){}#` not beginning with `:` and not forming an _integer_  | `foo`, `два-ℕ` |
-| Atom |  A colon `:` succeeded by a _name_ without whitespace | `:foo`, `:два-ℕ` |
-| Code value | A sequence of words enclosed in `{` and `}` | `{ :foo 5 build }` |
-| Tuple | A sequence of (possibly mixed) names, integers, strings, code values enclosed in `(` `)` | `(rectangle 3 5)` |
+| Atom | One or more colons `:` succeeded by a _name_ without whitespace | `:foo`, `::ba:r`, `:два-ℕ` |
+| Code value | A valid program enclosed in `{` and `}` | `{ :foo 5 build }` |
+| Tuple | A sequence of (possibly mixed) names, atoms*, integers, strings, code values enclosed in `(` `)` | `(rectangle 3 5)` |
+
+`*` Note that `::foo` is the atom with the name `":foo"`, and `(foo :bar)` is a tuple containing atoms `:foo` and `::bar`.
 
 Example of a valid program:
 ```elixir
 { :x var { x + } } :make_adder jar
 5 make_adder :add5 jar
 
-"Answer:" print
-37 add5 print
+"Meaning of life, the universe and everything: " print
+37 add5 println
 ```
 
 
@@ -58,7 +60,7 @@ which is given a name, and a _function call_ is the act of executing that action
 the top two elements of the stack and, assuming they're integers, puts their
 sum on the stack.
 
-* Some functions can alter local variables. For example, The `var` function creates
+* Some functions can create local variables. For example, The `var` function creates
 a local variable given an atom and a value. This program puts `6` on the stack:
 ```elixir
 1 :x var
@@ -68,6 +70,13 @@ x y  + y *
 ```
 What `var` actually does is: it captures the top value of the stack and creates
 a function, named the same as the atom, that puts that value onto the stack.
+
+* "Variables" aren't reassignable. You can only assign a value to a name once
+in a scope. For example, this will fail at runtime:
+```elixir
+1 :x var
+2 :x var
+```
 
 * Some functions produce _side effects_: print something to the screen, send a
 request to a web service, or launch nuclear missiles. And example would be the
@@ -104,10 +113,14 @@ and a closure. They're explained in more detail later.
 
 A tuple is an ordered collection of values.
 
+### Box values
+
+A "box" is a mutable variable.
+
 
 ## Code values
 
-A sequence of words enclosed in `{` `}` is a _code value_ word. It's a literal
+A syntactically valid program enclosed in `{` `}` is a _code value_ word. It's a literal
 word, so all it does is put a code value onto the stack. A code value represents
 a user-defined function and consists of a sequence of words.
 
@@ -157,6 +170,16 @@ only create local variables. Example:
 
 10 double print  # output: 20
 x print          # output: 5
+```
+
+
+## Parent-scoped functions
+A function can be made "parent-scoped" with `parent-scope`. It means that the
+function will not reserve a local scope when called.
+
+```elixir
+{ 6 :x var } parent-scope !
+x println  # 6
 ```
 
 
