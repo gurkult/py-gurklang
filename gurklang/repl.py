@@ -204,6 +204,30 @@ ENTER = chr(13)
 BACKSPACE = chr(127)
 
 
+def _process_next_character(old_line: str):
+    char = click.getchar(echo=False)
+
+    if len(char) == 1 and char.isprintable():
+        new_line = old_line + char
+    elif char == "\t":
+        new_line = old_line + "  "
+    elif char == BACKSPACE:
+        new_line = old_line[:-1]
+    else:
+        new_line = old_line
+
+    print("\b" * len(old_line), end="")
+    print(" " * len(old_line), end="")
+    print("\b" * len(old_line), end="")
+    print(colorize_source_line(new_line), end="")
+
+    if char == ENTER:
+        print()
+        return True, new_line
+    else:
+        return False, new_line
+
+
 def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]) -> str:
     # TODO: refactor this method
     lines = []
@@ -215,25 +239,8 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
         try:
             print(line, end="")
             while True:
-                old_line = line
-                char = click.getchar(echo=False)
-
-                if len(char) == 1 and char.isprintable():
-                    line += char
-
-                if char == "\t":
-                    line += "  "
-
-                if char == BACKSPACE:
-                    line = line[:-1]
-
-                print("\b" * len(old_line), end="")
-                print(" " * len(old_line), end="")
-                print("\b" * len(old_line), end="")
-                print(colorize_source_line(line), end="")
-
-                if char == ENTER:
-                    print()
+                done, line = _process_next_character(line)
+                if done:
                     break
         except (EOFError, KeyboardInterrupt):
             print()
