@@ -1,13 +1,11 @@
-import weakref
-from gurklang.vm_utils import render_value_as_source
 from immutables import Map
-from typing import Callable, Dict, List, Optional, Sequence, Union, Tuple
+from typing import Callable, Dict, Optional, Sequence, Union, Tuple
 from . import prelude
 from gurklang.types import (
-    CallByValue, CodeFlags, KillBox, MakeScope, NativeFunction, PopScope, Put,
+    CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
     Scope, Stack, Instruction, Code, State, Value, Vec
 )
-from collections import deque, defaultdict
+from collections import deque
 
 
 MiddlewareT = Callable[[Instruction, Stack, Stack], None]
@@ -78,39 +76,6 @@ def call_with_middleware(
             else:
                 state = function.fn(state)
 
-        elif instruction.tag == "make_box":
-            (value, rest) = state.stack  # type: ignore
-            box, new_state = state.with_stack(rest).add_box(value)
-            state = new_state.push(box)
-
-        elif instruction.tag == "kill_box":
-            if instruction.id in locked_boxes:
-                del locked_boxes[instruction.id]
-                print(f"Warning: box {instruction.id} killed while locked")
-            state = state.kill_box(instruction.id)
-
-        elif instruction.tag == "lock_box":
-            box_content = state.read_box(instruction.id)
-            if instruction.id in locked_boxes:
-                repr_ = render_value_as_source(box_content)
-                raise RuntimeError(f"Box {instruction.id} having {repr_} was locked while already being locked")
-            locked_boxes[instruction.id] = box_content
-
-        elif instruction.tag == "unlock_box":
-            if instruction.id not in locked_boxes:
-                raise RuntimeError(f"Attempted to unlock box {instruction.id} when it's not locked")
-            if state.stack is None:
-                raise RuntimeError(f"Unlocking box {instruction.id} when the stack is empty")
-            (final_value, rest) = state.stack
-            state = state.with_boxes(state.boxes.set(instruction.id, final_value)).with_stack(rest)
-            del locked_boxes[instruction.id]
-
-        elif instruction.tag == "restore_box":
-            if instruction.id not in locked_boxes:
-                raise RuntimeError(f"Cannot restore box {instruction.id}: no transaction in progress")
-            old_value = locked_boxes.pop(instruction.id)
-            state = state.with_boxes(state.boxes.set(instruction.id, old_value))
-
         else:
             stack, scope = execute(state.stack, state.scope, instruction)
             state = state.with_stack(stack).with_scope(scope)
@@ -160,14 +125,14 @@ global_scope = make_scope(parent=builtin_scope)
 
 def run(instructions: Sequence[Instruction]):
     return call(
-        State(None, global_scope, Map(), 0),
+        State(None, global_scope, Map(), Map(), 0),
         Code(instructions, closure=None, name="<entry-point>")
     )
 
 
 def run_with_middleware(instructions: Sequence[Instruction], middleware: MiddlewareT):
     return call_with_middleware(
-        State(None, global_scope, Map(), 0),
+        State(None, global_scope, Map(), Map(), 0),
         Code(instructions, closure=None, name="<entry-point>"),
         middleware
     )

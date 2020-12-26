@@ -68,8 +68,12 @@ InfiniteStack = Tuple["Value", Tuple["Value", Tuple["Value", "InfiniteStack"]]]
 class State:
     stack: Stack
     scope: Scope
-    boxes: Map
+    boxes: Map  # Map[int, Stack]
+    box_in_transaction: Map  # Map[int, bool]
     last_box_id: int
+
+    def is_box_in_transaction(self, id: int) -> bool:
+        return self.box_in_transaction.get(id, False)
 
     def infinite_stack(self) -> InfiniteStack:
         return self.stack # type: ignore
@@ -80,8 +84,42 @@ class State:
             stack = (value, stack)
         return self.with_stack(stack)
 
-    def read_box(self, id: int) -> "Value":
+    def read_box(self, id: int) -> Stack:
         return self.boxes[id]
+
+    def pop_box(self, id: int) -> Tuple["Value", "State"]:
+        v = self.read_box(id)
+        if v is None or v[1] is None:
+            raise RuntimeError(f"no transaction in process")
+        (top, rest) = v
+        if rest[1] is None:  # type: ignore
+            return top, self.set_box(id, rest)._remove_from_transaction(id)
+        else:
+            return top, self.set_box(id, rest)
+
+    def commit_box(self, id: int) -> "State":
+        v = self.read_box(id)
+        if v is None:
+            raise RuntimeError(f"no transaction in process")
+        (a, rest1) = v
+        if rest1 is None:
+            raise RuntimeError(f"no transaction in process")
+        (_b, rest2) = rest1  # type: ignore
+        if rest2 is None:
+            return self.set_box(id, (a, None))._remove_from_transaction(id)
+        else:
+            return self.set_box(id, (a, rest2))
+
+    def set_box(self, id: int, value: Stack) -> "State":
+        return self._with_boxes(self.boxes.set(id, value))
+
+    def _put_in_transaction(self, box_id: int) -> "State":
+        return self._with_boxes_in_transaction(self.box_in_transaction.set(box_id, True))
+
+    def _remove_from_transaction(self, box_id: int) -> "State":
+        if box_id not in self.box_in_transaction:
+            return self
+        return self._with_boxes_in_transaction(self.box_in_transaction.delete(box_id))
 
     def with_stack(self, stack: Stack):
         return dataclass_replace(self, stack=stack)
@@ -89,8 +127,11 @@ class State:
     def with_scope(self, scope: Scope):
         return dataclass_replace(self, scope=scope)
 
-    def with_boxes(self, boxes: Map):
+    def _with_boxes(self, boxes: Map):
         return dataclass_replace(self, boxes=boxes)
+
+    def _with_boxes_in_transaction(self, in_transaction: Map):
+        return dataclass_replace(self, box_in_transaction=in_transaction)
 
     def increment_box_id(self):
         return dataclass_replace(self, last_box_id=self.last_box_id + 1)
@@ -98,13 +139,13 @@ class State:
     def add_box(self, value: "Value") -> Tuple["Box", "State"]:
         state = self.increment_box_id()
         box = Box(state.last_box_id)
-        state = state.with_boxes(state.boxes.set(state.last_box_id, value))
+        state = state.set_box(state.last_box_id, (value, None))
         return box, state
 
     def kill_box(self, id: int):
         if id not in self.boxes:
             raise RuntimeError(f"Trying to kill nonexistent box with id {id}")
-        return self.with_boxes(self.boxes.delete(id))
+        return self._with_boxes(self.boxes.delete(id))
 
 
 @dataclass(frozen=True)
@@ -175,52 +216,9 @@ class PopScope:
     def as_vec(self):
         return Vec((Atom("PopScope"),))
 
-@dataclass(frozen=True)
-class MakeBox:
-    """Pop the top value from the stack and make a box out of it"""
-    tag: ClassVar[Literal["make_box"]] = "make_box"
-
-    def as_vec(self):
-        return Vec((Atom("MakeBox"),))
-
-@dataclass(frozen=True)
-class KillBox:
-    """Forget a value stored in a box with a given id"""
-    id: int
-    tag: ClassVar[Literal["kill_box"]] = "kill_box"
-
-    def as_vec(self):
-        return Vec((Atom("KillBox"), Int(self.id)))
-
-@dataclass(frozen=True)
-class LockBox:
-    """Start a transaction on a box"""
-    id: int
-    tag: ClassVar[Literal["lock_box"]] = "lock_box"
-
-    def as_vec(self):
-        return Vec((Atom("LockBox"), Int(self.id)))
-
-@dataclass(frozen=True)
-class UnlockBox:
-    """Finish transaction on a box"""
-    id: int
-    tag: ClassVar[Literal["unlock_box"]] = "unlock_box"
-
-    def as_vec(self):
-        return Vec((Atom("UnlockBox"), Int(self.id)))
-
-@dataclass(frozen=True)
-class RestoreBox:
-    """Roll back a transaction on a box"""
-    id: int
-    tag: ClassVar[Literal["restore_box"]] = "restore_box"
-
-    def as_vec(self):
-        return Vec((Atom("RestoreBox"), Int(self.id)))
 
 # `Instruction` is a single step executed by the interpreter
-Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope, MakeBox, KillBox, LockBox, UnlockBox, RestoreBox]
+Instruction = Union[Put, PutCode, CallByName, CallByValue, MakeVec, MakeScope, PopScope]
 
 
 

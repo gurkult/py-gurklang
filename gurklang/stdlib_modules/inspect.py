@@ -2,9 +2,9 @@ import pprint
 import math
 
 from typing import Sequence, TypeVar, Tuple
-from ..vm_utils import stringify_value
+from ..vm_utils import render_value_as_source, stringify_value
 from ..builtin_utils import Module, Fail
-from ..types import Atom, Code, Instruction, Value, Stack, Scope, Int, Vec
+from ..types import Atom, Code, Instruction, State, Value, Stack, Scope, Int, Vec
 
 from collections import deque
 
@@ -90,4 +90,32 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
 @module.register_simple("type")
 def get_type(stack: T[V, S], scope: Scope, fail: Fail):
     (head, rest) = stack
-    return (Atom(head.tag), rest), scope
+    return (Atom(head.tag.replace("_", "-")), rest), scope
+
+
+def _stack_to_vec(stack: Stack) -> Vec:
+    if stack is None:
+        return Vec(())
+    else:
+        head, rest = stack
+        return Vec((head, _stack_to_vec(rest)))
+
+
+@module.register("boxes?")
+def __boxes(state: State, fail: Fail):
+    # return a vector with pairs (id values) for boxes
+    pairs = [
+        (Int(id), _stack_to_vec(values))
+        for (id, values) in state.boxes.items()
+    ]
+    pairs.sort(key=lambda pair: pair[0].value)
+    return state.push(Vec([*map(Vec, pairs)]))
+
+
+@module.register("boxes!")
+def __boxes(state: State, fail: Fail):
+    # print boxes state
+    for id, values in state.boxes.items():
+        vec = _stack_to_vec(values)
+        print(f"{id: 2}", ":", render_value_as_source(vec))
+    return state
