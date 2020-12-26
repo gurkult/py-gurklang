@@ -4,7 +4,7 @@ Read Eval Print Loop
 The essential interactive programming tool!
 """
 from __future__ import annotations
-from gurklang.vm_utils import render_value_as_source
+from gurklang.vm_utils import render_value_as_source, stringify_stack
 import sys
 import traceback
 from typing import Any, Callable, Optional, TextIO, Tuple
@@ -244,15 +244,16 @@ class Repl:
 
     def _debug(self, source_code: str):
         def on_next_step(i: Instruction, old_stack: Stack, new_stack: Stack):
-            self._display_stack(self.state.with_stack(new_stack))
+            self._display_stack_with_instruction(new_stack, i)
             cmd = input("'next' or 'exit' (next): ")
             if cmd == "exit":
                 raise ExitDebug
 
         def run():
+            self._display_stack(self.state.stack)
             try:
                 resulting_state = call_with_middleware(self.state, code(source_code), middleware=on_next_step)
-                self._display_stack(resulting_state)
+                self._display_stack(resulting_state.stack, color=Fore.GREEN)
                 if input("accept the resulting state? y/n (n): ") in ("y", "yes", "1"):
                     return resulting_state
             except ExitDebug:
@@ -297,14 +298,31 @@ class Repl:
         if s != "":
             writer.write(Fore.CYAN + s + Fore.RESET)
 
+    # Displaying the stack:
+
     def _display_stack_if_on(self):
         if self._is_stack_display_on:
-            self._display_stack(self.state)
+            self._display_stack(self.state.stack)
 
-    def _display_stack(self, state: State):
-        print(Fore.CYAN + self._string_before_stack + Fore.YELLOW + Style.BRIGHT, end="")
-        call(state, code("12 stack-repr print"))
-        print(Fore.RESET + Style.RESET_ALL)
+    def _display_stack(self, stack: Stack, color=Fore.YELLOW):
+        print(Fore.CYAN + self._string_before_stack + color + Style.BRIGHT, end="")
+        print(stringify_stack(stack, max_depth=12) + Fore.RESET + Style.RESET_ALL)
+
+    def _display_stack_with_instruction(self, stack: Stack, instruction: Instruction):
+        stack_repr = stringify_stack(stack, max_depth=10)
+        padded_stack_repr = stack_repr.ljust(50)
+        instruction_repr = render_value_as_source(instruction.as_vec())
+        print(
+            Fore.CYAN
+            + self._string_before_stack
+            + Fore.YELLOW
+            + Style.BRIGHT
+            + padded_stack_repr
+            + Fore.GREEN
+            + instruction_repr
+            + Fore.RESET
+            + Style.RESET_ALL
+        )
 
     # Interacting with configuration:
 
