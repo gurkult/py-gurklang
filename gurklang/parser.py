@@ -1,5 +1,5 @@
 from typing import Any, Iterator, List, Generator, Tuple
-from gurklang.parser_utils import build_tokenizer
+from gurklang.parser_utils import TokenStream, build_tokenizer
 from gurklang.types import Instruction, Put, PutCode, CallByName, MakeVec, Atom, Str, Int
 import ast
 import itertools
@@ -29,6 +29,7 @@ tokenizer = build_tokenizer(
 
 
 Token = tokenizer.token_type
+TokenName = tokenizer.token_name_type
 
 
 class ParseError(Exception):
@@ -40,15 +41,15 @@ class ParseError(Exception):
 
     def is_eof(self):
         # This is related to the RBR } hack in the `parse` function
-        return self.token.position == len(self.source)
+        return self.token.position >= len(self.source) - 1
 
 
 
-def _lex(source: str) -> Iterator[Token]:
+def _lex(source: str) -> TokenStream[TokenName]:
     return tokenizer.tokenize(source)
 
 
-def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
+def _parse_vec(source: str, token_stream: TokenStream[TokenName]) -> Iterator[Instruction]:
     n = 0
     for token in token_stream:
         if token.name == "RPAR":
@@ -67,11 +68,11 @@ def _parse_vec(source: str, token_stream: Iterator[Token]) -> Iterator[Instructi
         elif token.name == "LBR":
             yield PutCode(list(_parse_codeblock(source, token_stream)))
         else:
-            raise ParseError(source, "a tuple literal", token)
+            raise ParseError(source, "a tuple literal", token_stream.last_token)
 
         n += 1
     else:
-        raise ParseError(source, "a tuple literal", token)  # type: ignore
+        raise ParseError(source, "a tuple literal", token_stream.last_token)  # type: ignore
     yield MakeVec(n)
 
 
@@ -86,7 +87,7 @@ def _collect(gen):
 
 def _parse_codeblock(
     source: str,
-    token_stream: Iterator[Token]
+    token_stream: TokenStream[TokenName]
 ) -> Generator[Instruction, None, Tuple[int, int]]:
     for token in token_stream:
         if token.name == "RBR":
@@ -116,16 +117,14 @@ def _parse_codeblock(
             yield Put(Str(ast.literal_eval(token.value)))
 
         else:
-            raise ParseError(source, "a code literal", token)
+            raise ParseError(source, "a code literal", token_stream.last_token)
     else:
-        raise ParseError(source, "a code literal", token)  # type: ignore
+        raise ParseError(source, "a code literal", token_stream.last_token)  # type: ignore
 
 
-def _parse_stream(source: str, token_stream: Iterator[Token]) -> Iterator[Instruction]:
-    return _parse_codeblock(source, itertools.chain(
-        token_stream,
-        [Token("RBR", "}", len(source))],
-    ))
+def _parse_stream(source: str, token_stream: TokenStream[TokenName]) -> Iterator[Instruction]:
+    token_stream.push(Token("RBR", "}", len(source)))
+    return _parse_codeblock(source, token_stream)
 
 
 def parse(source: str) -> List[Instruction]:

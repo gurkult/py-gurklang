@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import re
 from dataclasses import dataclass
-from typing import Callable, Collection, Generic, Iterable, Iterator, Optional, Pattern, TypeVar, Dict, Tuple, Type
+from typing import Callable, Collection, Generic, Iterable, Iterator, List, Optional, Pattern, TypeVar, Dict, Tuple, Type
+from collections import deque
 
 
 TokenName = TypeVar("TokenName", bound=str)
@@ -16,6 +17,35 @@ class Token(Generic[TokenName]):
     @property
     def span(self) -> Tuple[int, int]:
         return (self.position, self.position + len(self.value))
+
+
+class TokenStream(Generic[TokenName]):
+    def __init__(self, it: Iterator[Token[TokenName]]):
+        self.it = it
+        self._last_token: Optional[Token[TokenName]] = None
+        self._extra_tokens: "deque[Token[TokenName]]" = deque()
+
+    @property
+    def last_token(self) -> Token[TokenName]:
+        if self._last_token is None:
+            raise ValueError("No tokens yet")
+        return self._last_token
+
+    def push(self, token: Token[TokenName]):
+        self._extra_tokens.appendleft(token)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            token = next(self.it)
+        except StopIteration:
+            if not self._extra_tokens:
+                raise
+            token = self._extra_tokens.pop()
+        self._last_token = token
+        return token
 
 
 @dataclass
@@ -33,7 +63,11 @@ class Tokenizer(Generic[TokenName]):
     def token_type(self) -> Type[Token[TokenName]]:
         return Token
 
-    def tokenize(self, source: str) -> Iterator[Token[TokenName]]:
+    @property
+    def token_name_type(self) -> Type[TokenName]:
+        return str  # type: ignore
+
+    def _tokenize_gen(self, source: str) -> Iterator[Token[TokenName]]:
         for match in self.pattern.finditer(source):
             name, value = next(
                 (name, value) for (name, value) in match.groupdict().items()
@@ -42,6 +76,9 @@ class Tokenizer(Generic[TokenName]):
             name, value = self.middleware(name, value)
             if name not in self.ignore:
                 yield Token(name, value, match.start())  # type: ignore
+
+    def tokenize(self, source: str) -> TokenStream[TokenName]:
+        return TokenStream(self._tokenize_gen(source))
 
 
 def build_regexp_source(lookup: Iterable[Tuple[str, str]]):
