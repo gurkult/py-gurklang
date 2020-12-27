@@ -98,14 +98,8 @@ class Trie(Generic[V]):
     def __contains__(self, key: str):
         return self.node.search(key) is not NotFound
 
-    def __str__(self):
-        rv = "Trie("
-        for k, v in self.prefix_search(""):
-            rv += f"{k!r} -> {v!r},"
-        if rv != "Trie(":  # remove trailing comma
-            rv = rv[:-1]
-        rv += ")"
-        return rv
+    def __repr__(self):
+        return "Trie(" + repr(dict(self.prefix_search(""))) + ")"
 
     def prefix_search(self, prefix: str) -> Iterator[Tuple[str, V]]:
         yield from self.node.search_all(prefix)
