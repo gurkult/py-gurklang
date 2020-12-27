@@ -4,11 +4,12 @@ Read Eval Print Loop
 The essential interactive programming tool!
 """
 from __future__ import annotations
+from enum import Enum
 from gurklang.vm_utils import render_value_as_source, stringify_stack
 from .repl_constants import DEFAULT_PRELUDE, BACKSLASH_MAPPING
 import sys
 import traceback
-from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
+from typing import Any, Callable, Iterator, Optional, TextIO, Tuple, final
 
 import click
 
@@ -20,6 +21,25 @@ init()
 from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value
 from .vm import call_with_middleware, run, call, make_scope
 from .parser import parse, lex, ParseError
+
+
+
+ENTER = chr(13)
+BACKSPACE = (chr(127), chr(0x08))
+
+is_backspace = BACKSPACE.__contains__
+
+
+def backspace(size: int = 1):
+    click.echo("\b" * size, nl=False)
+    click.echo(" " * size, nl=False)
+    click.echo("\b" * size, nl=False)
+
+
+def inline_error_message(message: str):
+    click.secho(message, color=True, fg="white", bg="red", nl=False)
+    click.getchar(echo=False)
+    backspace(len(message))
 
 
 def print_red(*xs):
@@ -88,167 +108,154 @@ class StdoutSniper:
         pass
 
 
-class ExitDebug(BaseException):
-    pass
+class SyntaxHighlighter:
+    def __init__(self, repl: Repl):
+        self.repl = repl
 
+    def _colorize_line(self, source_line: str) -> Iterator[str]:
+        last_end_pos = -1
+        for token in lex(source_line):
+            if token.position > last_end_pos + 1:  # we've got whitespace
+                ws = source_line[last_end_pos + 1 : token.position]
+                yield Fore.LIGHTGREEN_EX + Style.DIM + ws + Style.RESET_ALL + Fore.RESET
 
-def _colorize_line(source_line: str) -> Iterator[str]:
-    last_end_pos = -1
-    for token in lex(source_line):
-        if token.position > last_end_pos + 1:  # we've got whitespace
-            ws = source_line[last_end_pos + 1 : token.position]
-            yield Fore.LIGHTGREEN_EX + Style.DIM + ws + Style.RESET_ALL + Fore.RESET
+            if token.name == "STRING":
+                yield Fore.GREEN + token.value + Fore.RESET
 
-        if token.name == "STRING":
-            yield Fore.GREEN + token.value + Fore.RESET
+            elif token.name == "INT":
+                yield Fore.CYAN + token.value + Fore.RESET
 
-        elif token.name == "INT":
-            yield Fore.CYAN + token.value + Fore.RESET
+            elif token.name == "ATOM":
+                yield Fore.RED + token.value + Fore.RESET
 
-        elif token.name == "ATOM":
-            yield Fore.RED + token.value + Fore.RESET
+            elif token.name == "NAME":
+                yield Style.BRIGHT + Fore.YELLOW + token.value + Fore.RESET + Style.RESET_ALL
 
-        elif token.name == "NAME":
-            yield Style.BRIGHT + Fore.YELLOW + token.value + Fore.RESET + Style.RESET_ALL
-
-        else:
-            yield token.value
-
-        last_end_pos = token.position + len(token.value) - 1
-
-    if last_end_pos != len(source_line):  # some whitespace is left
-        yield Fore.WHITE + Style.DIM + source_line[last_end_pos + 1:] + Style.RESET_ALL + Fore.RESET
-
-
-def colorize_source_line(source_line: str):
-    return "".join(_colorize_line(source_line))
-
-
-def backspace(size: int = 1):
-    click.echo("\b" * size, nl=False)
-    click.echo(" " * size, nl=False)
-    click.echo("\b" * size, nl=False)
-
-
-def inline_error_message(message: str):
-    click.secho(message, color=True, fg="white", bg="red", nl=False)
-    click.getchar(echo=False)
-    backspace(len(message))
-
-
-ENTER = chr(13)
-BACKSPACE = (chr(127), chr(0x08))
-
-is_backspace = BACKSPACE.__contains__
-
-def _next_backslash_step(accumulated: str):
-    char = click.getchar(echo=False)
-    if char == "\\":
-        if accumulated == "":
-            backspace()
-            return True, "\\"
-    elif char in (" ", ENTER):
-        if accumulated in BACKSLASH_MAPPING:
-            backspace(len(accumulated) + 1)
-            return True, BACKSLASH_MAPPING[accumulated]
-        else:
-            inline_error_message("not found")
-            return True, accumulated
-    elif is_backspace(char):
-        if accumulated == "":
-            backspace()
-            return True, ""
-        else:
-            return False, accumulated[:-1]
-    elif len(char) == 1 and char.isprintable():
-        return False, accumulated + char
-    return False, accumulated
-
-
-def _process_backslash_escape() -> str:
-    accumulated = ""
-
-    click.secho("\\", color=True, fg="white", bg="blue", nl=False)
-
-    while True:
-        done, new_acc = _next_backslash_step(accumulated)
-        if done:
-            return new_acc
-
-        backspace(len(accumulated) + 1)
-        bg, bold = ("green", True) if new_acc in BACKSLASH_MAPPING else ("blue", False)
-        click.secho("\\" + new_acc, color=True, bg=bg, bold=bold, nl=False)
-
-        accumulated = new_acc
-
-
-def _process_next_character(old_line: str):
-    char = click.getchar(echo=False)
-
-    if char == "\\":
-        new_line = old_line + _process_backslash_escape()
-    elif len(char) == 1 and char.isprintable():
-        new_line = old_line + char
-    elif char == "\t":
-        new_line = old_line + "  "
-    elif is_backspace(char):
-        new_line = old_line[:-1]
-    else:
-        new_line = old_line
-
-    backspace(len(old_line))
-    print(colorize_source_line(new_line), end="")
-
-    if char == ENTER:
-        print()
-        return True, new_line
-    else:
-        return False, new_line
-
-
-def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]) -> str:
-    # TODO: refactor this method
-    lines = []
-
-    indentation = ""  # `line` will be reassigned to keep the indentation level in multiline blocks
-    while True:
-        prompt = repl.config.prompt if lines == [] else repl.config.multiline_prompt
-        print(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET, end="")
-        line = indentation
-        print(line, end="")
-        try:
-            while True:
-                done, line = _process_next_character(line)
-                if done:
-                    break
-            lines.append(line)
-        except (EOFError, KeyboardInterrupt):
-            print()
-            if lines == []:
-                return "quit!"
             else:
-                return ""
+                yield token.value
 
-        try:
-            parse("\n".join(lines))
-        except ParseError as e:
-            if not e.is_eof():
-                on_parse_error(e)
-                return ""
+            last_end_pos = token.position + len(token.value) - 1
+
+        if last_end_pos != len(source_line):  # some whitespace is left
+            yield Fore.WHITE + Style.DIM + source_line[last_end_pos + 1:] + Style.RESET_ALL + Fore.RESET
+
+
+    def colorize_source_line(self, source_line: str):
+        return "".join(self._colorize_line(source_line))
+
+
+class InputMethod:
+    def __init__(self, repl: Repl):
+        self.repl = repl
+        self.highlighter = SyntaxHighlighter(repl)
+
+    def get_multiline_input(self, on_parse_error: Callable[[ParseError], None]) -> str:
+        # TODO: refactor this method
+        lines = []
+
+        indentation = ""
+        while True:
+            prompt = self.repl.config.prompt if lines == [] else self.repl.config.multiline_prompt
+            print(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET, end="")
+            line = indentation
+            print(line, end="")
+            try:
+                done = False
+                while not done:
+                    done, line = self. _process_next_character(line)
+                lines.append(line)
+            except (EOFError, KeyboardInterrupt):
+                print()
+                if lines == []:
+                    return "quit!"
+                else:
+                    return ""
+
+            try:
+                parse("\n".join(lines))
+                break
+            except ParseError as e:
+                if not e.is_eof():
+                    on_parse_error(e)
+                    return ""
+
+            last_indent_size = len(lines[-1]) - len(lines[-1].lstrip())
+            indentation = " " * last_indent_size
+        return "\n".join(lines)
+
+    def _process_next_character(self, old_line: str):
+        """
+        Get the next character and decide what the new line state should be.
+
+        Returns:
+            0. Is it the end of the line?
+            1. The new line state
+        """
+        char = click.getchar(echo=False)
+
+        if char == "\\":
+            new_line = old_line + self._process_backslash_escape()
+        elif len(char) == 1 and char.isprintable():
+            new_line = old_line + char
+        elif char == "\t":
+            new_line = old_line + "  "
+        elif is_backspace(char):
+            new_line = old_line[:-1]
         else:
-            break
+            new_line = old_line
 
-        last_indent_size = len(lines[-1]) - len(lines[-1].lstrip())
-        indentation = " " * last_indent_size
-    return "\n".join(lines)
+        backspace(len(old_line))
+        print(self.highlighter.colorize_source_line(new_line), end="")
+
+        if char == ENTER:
+            print()
+            return True, new_line
+        else:
+            return False, new_line
+
+    def _process_backslash_escape(self) -> str:
+        accumulated = ""
+
+        click.secho("\\", color=True, fg="white", bg="blue", nl=False)
+
+        while True:
+            done, new_acc = self._next_backslash_step(accumulated)
+            if done:
+                return new_acc
+
+            backspace(len(accumulated) + 1)
+            bg, bold = ("green", True) if new_acc in BACKSLASH_MAPPING else ("blue", False)
+            click.secho("\\" + new_acc, color=True, bg=bg, bold=bold, nl=False)
+
+            accumulated = new_acc
+
+    def _next_backslash_step(self, accumulated: str):
+        char = click.getchar(echo=False)
+        if char == "\\":
+            if accumulated == "":
+                backspace()
+                return True, "\\"
+        elif char in (" ", ENTER):
+            if accumulated in BACKSLASH_MAPPING:
+                backspace(len(accumulated) + 1)
+                return True, BACKSLASH_MAPPING[accumulated]
+            else:
+                inline_error_message("not found")
+                return True, accumulated
+        elif is_backspace(char):
+            if accumulated == "":
+                backspace()
+                return True, ""
+            else:
+                return False, accumulated[:-1]
+        elif len(char) == 1 and char.isprintable():
+            return False, accumulated + char
+        return False, accumulated
 
 
 class ReplConfig:
     def __init__(self, repl: Repl):
         self.repl = repl
-
-    def _run_code_for_side_effect(self, source_code: str):
-        call(self.repl.state, code(source_code))
 
     def _run_code_for_single_value(self, source_code: str) -> Value:
         state = call(self.repl.state, code(source_code))
@@ -297,9 +304,10 @@ class ReplConfig:
 
 
 class Repl:
-    stack: Stack
-    scope: Scope
     last_traceback: Optional[Tuple[Any, Any, Any]]
+
+    class ExitDebug(BaseException):
+        pass
 
     def __init__(self, prelude: str = DEFAULT_PRELUDE):
         state = run([])
@@ -317,13 +325,14 @@ class Repl:
         sys.stdout = self.sniper
 
         self.config = ReplConfig(self)
+        self.input_method = InputMethod(self)
 
     # Command processing:
 
     def run(self):
         action = "continue"
         while action != "stop":
-            command = get_multiline_input(self, _display_parse_error)
+            command = self.input_method.get_multiline_input(_display_parse_error)
             action = self._process_command(command)
 
     def _process_command(self, command: str):
@@ -354,7 +363,7 @@ class Repl:
             self._display_stack_with_instruction(new_stack, i)
             cmd = input("'next' or 'exit' (next): ")
             if cmd == "exit":
-                raise ExitDebug
+                raise Repl.ExitDebug
 
         def run():
             self._display_stack(self.state.stack)
@@ -363,7 +372,7 @@ class Repl:
                 self._display_stack(resulting_state.stack, color=Fore.GREEN)
                 if input("accept the resulting state? y/n (n): ") in ("y", "yes", "1"):
                     return resulting_state
-            except ExitDebug:
+            except Repl.ExitDebug:
                 print_red("debug mode exited")
             return self.state
 
@@ -430,13 +439,6 @@ class Repl:
             + Fore.RESET
             + Style.RESET_ALL
         )
-
-    # Interacting with configuration:
-
-
-
-
-
 
 
 def repl():
