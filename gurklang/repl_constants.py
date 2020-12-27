@@ -101,6 +101,5 @@ BACKSLASH_MAPPING = Trie({
     "and": "∧",
     "rarr": "→",
     "larr": "←",
-    "T": "⊤",
     "F": "⊥",
 })
