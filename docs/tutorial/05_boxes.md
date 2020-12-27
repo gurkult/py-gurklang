@@ -124,7 +124,7 @@ But what if instead of `1` and `2` you want to push `1 f` and `:x :y g`?
 >>> list 1 f <-cons-
 >>> list :x :y g <-cons-
 Failure in function g:
-invariant violated: `list` is not of even langth!
+invariant violated: `list` is not of even length!
 ```
 What an unfortunate course of action. Turns out `g` relies on the list being
 of even length.
@@ -201,10 +201,10 @@ This is how you can make a box given an ID:
 ```gurkrepl
 >>> 2 inspect.make-box! :b var
 >>> b -> peek drop
-('>>>' ())
+('>>> ' ())
 >>>
 ```
-
+ dfguidfjgkdfjg
 This is how you can see the current state of a box:
 ```gurkrepl
 >>> 0 box :b var
@@ -225,6 +225,11 @@ Box transactions: (2 (0 ()))
 >>> b inspect.box-info!
 Box id: 7
 Box transactions: (3 (2 (0 ())))
+```
+
+# Rollback
+You can also _roll back_ a transaction, i.e. return it to its previous state.
+```gurkrepl
 >>> b <<<  # rollback
 >>> b inspect.box-info!
 Box id: 7

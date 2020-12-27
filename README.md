@@ -40,11 +40,10 @@ env/bin/python -m mkdocs serve
 
 # Build and push documentation
 
-Note that you need a **clean working tree** for this hack to work.
+Note that you need a **clean working tree** for this to work.
 
 ```bash
-env/bin/python -m mkdocs build
-./push.sh
+./push_docs.sh
 ```
 
 ---
