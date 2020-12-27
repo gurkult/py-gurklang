@@ -241,7 +241,7 @@ class InputMethod:
                 return True, BACKSLASH_MAPPING[accumulated]
             else:
                 inline_error_message("not found")
-                return True, accumulated
+                return False, accumulated
         elif is_backspace(char):
             if accumulated == "":
                 backspace()
