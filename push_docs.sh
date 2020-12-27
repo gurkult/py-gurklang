@@ -6,7 +6,7 @@ cp site/CNAME site/docs/CNAME
 
 if [[ "$(git status)" == *"nothing to commit, working tree clean"* ]]
 then
-    sed -i "/site/d" ./.gitignore
+    sed -i "/site\/docs/d" ./.gitignore
     git add .
     git commit -m "Edit .gitignore to publish"
     git push origin `git subtree split --prefix site/docs/ master`:gh-pages --force
