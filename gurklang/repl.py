@@ -257,27 +257,6 @@ class ReplConfig:
     def __init__(self, repl: Repl):
         self.repl = repl
 
-    def _run_code_for_single_value(self, source_code: str) -> Value:
-        state = call(self.repl.state, code(source_code))
-        if state.stack is None:
-            raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
-        (head, _rest) = state.stack
-        return head
-
-    def _get_str_config_value(self, label: str) -> str:
-        str_ = self._run_code_for_single_value(f"repl[{label}] ->")
-        if str_.tag != "str":
-            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
-        return str_.value
-
-    def _get_bool_config_value(self, label: str) -> bool:
-        atom = self._run_code_for_single_value(f"repl[{label}] ->")
-        if atom.tag != "atom":
-            raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
-        if atom.value not in ["true", "false"]:
-            raise RuntimeError(f"Expected :true or :False for `repl[{label}]`, got {atom}")
-        return atom.value == "true"
-
     @property
     def string_before_stack(self) -> str:
         return self._get_str_config_value("before-stack")
@@ -301,6 +280,27 @@ class ReplConfig:
     @property
     def is_stack_display_on(self) -> bool:
         return self._get_bool_config_value("display-stack")
+
+    def _run_code_for_single_value(self, source_code: str) -> Value:
+        state = call(self.repl.state, code(source_code))
+        if state.stack is None:
+            raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
+        (head, _rest) = state.stack
+        return head
+
+    def _get_str_config_value(self, label: str) -> str:
+        str_ = self._run_code_for_single_value(f"repl[{label}] ->")
+        if str_.tag != "str":
+            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
+        return str_.value
+
+    def _get_bool_config_value(self, label: str) -> bool:
+        atom = self._run_code_for_single_value(f"repl[{label}] ->")
+        if atom.tag != "atom":
+            raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
+        if atom.value not in ["true", "false"]:
+            raise RuntimeError(f"Expected :true or :False for `repl[{label}]`, got {atom}")
+        return atom.value == "true"
 
 
 class Repl:
@@ -327,13 +327,15 @@ class Repl:
         self.config = ReplConfig(self)
         self.input_method = InputMethod(self)
 
-    # Command processing:
+    # Entry point:
 
     def run(self):
         action = "continue"
         while action != "stop":
             command = self.input_method.get_multiline_input(_display_parse_error)
             action = self._process_command(command)
+
+    # Command processing:
 
     def _process_command(self, command: str):
         return (
