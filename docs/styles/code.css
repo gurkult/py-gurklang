@@ -1,0 +1,52 @@
+.hljs.gurklang,
+.hljs.gurklang-repl {
+	display: block;
+	overflow-x: auto;
+	padding: .5em;
+	background: #000 !important;
+	color: #ffffff !important;
+    font-size: 16px !important;
+}
+
+.hljs-comment {
+    color: #afb6a9;
+}
+
+.hljs-string {
+    color: #48f883;
+}
+
+.hljs-number {
+    color: #86e6d9;
+}
+
+.hljs-symbol {
+    color: #f65a33;
+}
+
+.hljs-variable {
+    color: #f8f678;
+    font-weight: 600;
+}
+
+.hljs-punctuation {
+    font-weight: 600;
+}
+
+.hljs-meta {
+    color: #7299b9;
+}
+
+.hljs-deletion {
+    color: #ff0800;
+}
+
+.hljs-section-comment {
+    display: inline-block;
+    color: #3f3f3f;
+    transition: 0.25s;
+}
+
+.hljs-section-comment:hover {
+    background: #292929;
+}

@@ -22,30 +22,37 @@ const atom = {
 
 const identifier = {
     className: 'variable',
-    begin: /(?!:)[^\"'(){}# \n\t]+/,
+    begin: /(?![:+-])[^\"'(){}# \n\t]+/,
 };
 
 const replPrompt = {
     className: 'meta',
-    begin: ">>>",
+    begin: ">>> ",
     relevance: 10,
 };
 
 const vecLiteral = {
-    className: 'punctuation',
+    className: 'punctuation hljs-gurklang-list',
     begin: /\(/,
     end: /\)/,
 };
 
 const codeLiteral = {
-    className: 'punctuation',
+    className: 'punctuation hljs-gurklang-code',
     begin: /\{/,
     end: /\}/,
 };
 
-const comment = hljs.COMMENT('#', '$');
+const sectionComment = {
+    className: 'section-comment',
+    begin: /#\(\(/,
+    end: /#\)\)/,
+};
+
+const comment = hljs.COMMENT('#[^)][^)]', '$');
 
 const DEFAULT_CONTAINS = [
+    sectionComment,
     comment,
     number,
     atom,
@@ -58,30 +65,46 @@ const DEFAULT_CONTAINS = [
 
 vecLiteral.contains = DEFAULT_CONTAINS;
 codeLiteral.contains = DEFAULT_CONTAINS;
+sectionComment.contains = DEFAULT_CONTAINS;
 
 
 const gurklang = hljs => {
     return {
         name: 'Gurklang',
         aliases: ['gurk', 'gurklang'],
-        contains: DEFAULT_CONTAINS,
+        contains: [replPrompt, ...DEFAULT_CONTAINS],
     };
 };
 hljs.registerLanguage('gurklang', gurklang);
 
 
+
+const gurklangError = {
+    className: 'deletion',
+    begin: 'Failure in function',
+    end: 'Type traceback\? for complete Python traceback',
+};
+
+
 const gurklangRepl = hljs => {
+    const ellipsis = {
+        class: 'meta',
+        begin: /^\.\.\. /,
+        end: '$',
+        contains: DEFAULT_CONTAINS,
+    }
+
     const replOnly = {
         class: 'meta',
         begin: '^>>> ',
         end: '$',
-        contains: DEFAULT_CONTAINS
+        contains: [...DEFAULT_CONTAINS, ellipsis],
     };
 
     return {
         name: 'Gurklang REPL',
         aliases: ['gurkrepl', 'gurklang-repl'],
-        contains: [replOnly],
+        contains: [replOnly, gurklangError],
     };
 };
 hljs.registerLanguage('gurklang-repl', gurklangRepl);

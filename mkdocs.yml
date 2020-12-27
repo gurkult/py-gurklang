@@ -22,7 +22,7 @@ markdown_extensions:
   - admonition
 
 extra_javascript:
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js
   - javascripts/config.js
 extra_css:
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/lightfair.min.css
+  - styles/code.css
