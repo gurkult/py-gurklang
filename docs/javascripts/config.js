@@ -2,7 +2,7 @@
 const plugin = hljs => {
     const number = {
         className: 'number',
-        begin: /[+-]?\d+/,
+        begin: /[+-]?\d+(?=[(){}"'#]| |\n|$)/,
     };
 
     const doubleQuotedString = {
@@ -28,18 +28,19 @@ const plugin = hljs => {
     };
 
     const replPrompt = {
-        className: 'built_in',
+        className: 'meta',
         begin: ">>>",
+        relevance: 10,
     };
 
     const vecLiteral = {
-        punctuation,
+        className: 'punctuation',
         begin: /\(/,
         end: /\)/,
     };
 
     const codeLiteral = {
-        punctuation,
+        className: 'punctuation',
         begin: /\{/,
         end: /\}/,
     };

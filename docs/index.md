@@ -14,7 +14,7 @@ programming language.
 
 In Gurklang, all operations manipulate a _stack_ in some way:
 
-```elixir
+```gurk
 >>>
 >>> peek
 ()
@@ -38,7 +38,7 @@ and you end up with `(2 (1 ()))`, which means: `2`, then `1`, then the empty sta
 - Running `peek` simply prints the value of the stack
 
 Creating numbers isn't very exciting. Let's destroy them!
-```elixir
+```gurk
 >>> peek
 (4 (3 (2 (1 ()))))
 >>> drop
@@ -52,7 +52,7 @@ As you can see, `drop` simply discards the top value on the stack.
 
 
 `dup`, on the other hand, duplicates the top value on the stack:
-```elixir
+```gurk
 >>> peek
 (1 ())
 >>> dup peek
@@ -62,7 +62,7 @@ As you can see, `drop` simply discards the top value on the stack.
 ```
 
 You can also do maths!
-```elixir
+```gurk
 >>> peek
 (1 (1 (1 ())))
 >>> + peek
@@ -78,7 +78,7 @@ You can also do maths!
 operation on them, and put the result back on the stack.
 
 Like in most programming languages, there are strings:
-```elixir
+```gurk
 >>> 'Hello, world!'
 >>> peek
 ('Hello, world' ())
@@ -91,7 +91,7 @@ As you can see, both double and single quotes work.
 
 If you're just tired of spelling out some value every time, you can define a
 name!
-```elixir
+```gurk
 >>> 42 :answer var
 >>> "Hello, world!" :greeting var
 >>> answer peek
@@ -103,7 +103,7 @@ name!
 
 You can also define your own functions, which is the most important aspect of
 the language, but more on that later:
-```elixir
+```gurk
 >>> { dup dup println println println } :3print jar
 >>>
 >>> "Hello," 3print "How low" println
@@ -120,13 +120,13 @@ While each value has a fixed type (e.g. an integer, a string, a function),
 type soundness is not statically determined.
 
 On one hand, dynamic typing delays type errors until runtime:
-```elixir
+```gurk
 >>> { dup + } :double jar
 >>> 5 double println
 10
 >>> "a" double println
 ```
-```diff
+```
 Failure in function +
 Reason: Str(value='a') cannot be added with Str(value='a')
 > Stack:  [1 2 3 4 a a]
@@ -150,7 +150,7 @@ Gurklang is influenced by functional programming languages, like Clojure and Has
 Functional programming emphasizes:
 
 - Higher-order functions &mdash; functions that operate on functions
-    ```elixir
+    ```gurk
     >>> 5 peek
     (5 ())
     >>> { 2 + }
@@ -159,7 +159,7 @@ Functional programming emphasizes:
     >>> peek
     (7 ())
     ```
-    ```elixir
+    ```gurk
     >>> { :f var  f ! f ! } :do-twice jar
     >>> 5
     >>> peek
@@ -170,7 +170,7 @@ Functional programming emphasizes:
     ```
 
 - Immutability: a definition is not a _variable_ &mdash; you can't reassign it.
-    ```elixir
+    ```gurk
     >>> 3 :pi var
     >>> 3 :e  var
     >>> 2 :e  var
@@ -185,7 +185,7 @@ Functional programming emphasizes:
     There is a mechanism for managing mutable variables, but you'll rarely need it.
 
 - Expressive language and rich standard library
-    ```elixir
+    ```gurk
     >>> :coro :all import
     >>> {
     ...   swap dup
@@ -208,7 +208,7 @@ Functional programming emphasizes:
     ```
 
 - Strong typing: don't hide errors, bring them out!
-    ```elixir
+    ```gurk
     >>> 1 2 =
     >>> println
     :false
@@ -229,7 +229,7 @@ Functional programming emphasizes:
     ```
 
 - Great recursion support
-    ```elixir
+    ```gurk
     >>> { dup 2 <
     ...   { drop 1 }
     ...   { dup 1 - n! * } parent-scope

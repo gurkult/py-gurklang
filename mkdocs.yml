@@ -1,4 +1,12 @@
 site_name: Gurklang
+
+nav:
+  - Intro: 'index.md'
+  - Specification: 'specification.md'
+  - Tutorial:
+    - Basics: 'tutorial/00_basics.md'
+    - 'Mutable variables': 'tutorial/05_boxes.md'
+
 theme:
   name: material
   palette:
@@ -8,11 +16,13 @@ plugins:
   - search
 
 markdown_extensions:
-  - pymdownx.highlight
+  - pymdownx.highlight:
+      use_pygments: false
   - pymdownx.superfences
+  - admonition
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js
   - javascripts/config.js
 extra_css:
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/lightfair.min.css
