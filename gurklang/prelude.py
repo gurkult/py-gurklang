@@ -357,6 +357,8 @@ def _matches(pattern: Vec, stack: Stack, fail: Fail) -> Optional[Tuple[Stack, Di
     stack_captures: List[Tuple[int, Value]] = []
     variables: Dict[str, Value] = {}
     for inner_pattern in reversed(pattern.values):
+        if stack is None:
+            return None
         top, stack = stack  # type: ignore
         matches = _matches_impl(inner_pattern, top, fail)
         if matches is None:

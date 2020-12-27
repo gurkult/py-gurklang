@@ -92,3 +92,10 @@ def test_numbered_dot_pattern():
         run('(1 2 3 4) { ((. .3 .2 .)) {} } case')
         == run('(1 2 3 4) { ((. ... .. .)) {} } case')
     )
+
+
+def test_empty_stack_does_not_crash():
+    assert (
+        run('{ (.){1} (){2} } case')
+        == run('2')
+    )
