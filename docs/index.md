@@ -126,7 +126,7 @@ On one hand, dynamic typing delays type errors until runtime:
 10
 >>> "a" double println
 ```
-```
+```plaintext
 Failure in function +
 Reason: Str(value='a') cannot be added with Str(value='a')
 > Stack:  [1 2 3 4 a a]
@@ -175,7 +175,7 @@ Functional programming emphasizes:
     >>> 3 :e  var
     >>> 2 :e  var
     ```
-    ```
+    ```plaintext
     Failure in function var
     Reason: uncaught exception RuntimeError: Trying to reassign e
     > Stack:  [9 2 :e]
@@ -217,7 +217,7 @@ Functional programming emphasizes:
     :true
     >>> 1 "foo" =
     ```
-    ```
+    ```plaintext
     Failure in function =
     Reason: cannot compare type int with type str
     > Stack:  [9 1 foo]
