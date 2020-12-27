@@ -88,9 +88,6 @@ class StdoutSniper:
         pass
 
 
-
-
-
 class ExitDebug(BaseException):
     pass
 
@@ -215,7 +212,7 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
 
     indentation = ""  # `line` will be reassigned to keep the indentation level in multiline blocks
     while True:
-        prompt = repl._prompt if lines == [] else repl._multiline_prompt
+        prompt = repl.config.prompt if lines == [] else repl.config.multiline_prompt
         print(Fore.CYAN + Style.DIM + prompt + Style.RESET_ALL + Fore.RESET, end="")
         line = indentation
         print(line, end="")
@@ -246,6 +243,59 @@ def get_multiline_input(repl: Repl, on_parse_error: Callable[[ParseError], None]
     return "\n".join(lines)
 
 
+class ReplConfig:
+    def __init__(self, repl: Repl):
+        self.repl = repl
+
+    def _run_code_for_side_effect(self, source_code: str):
+        call(self.repl.state, code(source_code))
+
+    def _run_code_for_single_value(self, source_code: str) -> Value:
+        state = call(self.repl.state, code(source_code))
+        if state.stack is None:
+            raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
+        (head, _rest) = state.stack
+        return head
+
+    def _get_str_config_value(self, label: str) -> str:
+        str_ = self._run_code_for_single_value(f"repl[{label}] ->")
+        if str_.tag != "str":
+            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
+        return str_.value
+
+    def _get_bool_config_value(self, label: str) -> bool:
+        atom = self._run_code_for_single_value(f"repl[{label}] ->")
+        if atom.tag != "atom":
+            raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
+        if atom.value not in ["true", "false"]:
+            raise RuntimeError(f"Expected :true or :False for `repl[{label}]`, got {atom}")
+        return atom.value == "true"
+
+    @property
+    def string_before_stack(self) -> str:
+        return self._get_str_config_value("before-stack")
+
+    @property
+    def string_before_output(self) -> str:
+        return self._get_str_config_value("before-output")
+
+    @property
+    def string_after_output(self) -> str:
+        return self._get_str_config_value("after-output")
+
+    @property
+    def prompt(self) -> str:
+        return self._get_str_config_value("prompt")
+
+    @property
+    def multiline_prompt(self) -> str:
+        return self._get_str_config_value("ml-prompt")
+
+    @property
+    def is_stack_display_on(self) -> bool:
+        return self._get_bool_config_value("display-stack")
+
+
 class Repl:
     stack: Stack
     scope: Scope
@@ -258,12 +308,15 @@ class Repl:
         state = call(state, code(prelude))
         self.state = state
         self.last_traceback = None
+
         self.sniper = StdoutSniper(
             sys.stdout,
             self._before_printing_occurs,
             self._after_printing_occurs,
         )
         sys.stdout = self.sniper
+
+        self.config = ReplConfig(self)
 
     # Command processing:
 
@@ -276,10 +329,10 @@ class Repl:
     def _process_command(self, command: str):
         return (
             self._process_directives(command)
-            or self._run_with_error_handling(command, lambda: call(self.state, code(command)))
+            or self._run_with_error_handling(lambda: call(self.state, code(command)))
         )
 
-    def _run_with_error_handling(self, source_code: str, run: Callable[[], State]):
+    def _run_with_error_handling(self, run: Callable[[], State]):
         self.sniper.watch()
         try:
             self.state = run()
@@ -314,7 +367,7 @@ class Repl:
                 print_red("debug mode exited")
             return self.state
 
-        self._run_with_error_handling(source_code, run)
+        self._run_with_error_handling(run)
 
     def _process_directives(self, command: str):
         command = command.strip()
@@ -343,23 +396,23 @@ class Repl:
         sys.stdout = self.sniper.real_stdout
 
     def _before_printing_occurs(self, writer: TextIO):
-        s = self._string_before_output
+        s = self.config.string_before_output
         if s != "":
             writer.write(Fore.CYAN + s + Fore.RESET)
 
     def _after_printing_occurs(self, writer: TextIO):
-        s = self._string_after_output
+        s = self.config.string_after_output
         if s != "":
             writer.write(Fore.CYAN + s + Fore.RESET)
 
     # Displaying the stack:
 
     def _display_stack_if_on(self):
-        if self._is_stack_display_on:
+        if self.config.is_stack_display_on:
             self._display_stack(self.state.stack)
 
     def _display_stack(self, stack: Stack, color=Fore.YELLOW):
-        print(Fore.CYAN + self._string_before_stack + color + Style.BRIGHT, end="")
+        print(Fore.CYAN + self.config.string_before_stack + color + Style.BRIGHT, end="")
         print(stringify_stack(stack, max_depth=12) + Fore.RESET + Style.RESET_ALL)
 
     def _display_stack_with_instruction(self, stack: Stack, instruction: Instruction):
@@ -368,7 +421,7 @@ class Repl:
         instruction_repr = render_value_as_source(instruction.as_vec())
         print(
             Fore.CYAN
-            + self._string_before_stack
+            + self.config.string_before_stack
             + Fore.YELLOW
             + Style.BRIGHT
             + padded_stack_repr
@@ -380,53 +433,10 @@ class Repl:
 
     # Interacting with configuration:
 
-    def _run_code_for_side_effect(self, source_code: str):
-        call(self.state, code(source_code))
 
-    def _run_code_for_single_value(self, source_code: str) -> Value:
-        state = call(self.state, code(source_code))
-        if state.stack is None:
-            raise RuntimeError(f"Stack is unexpectedly empty at code: {code}")
-        (head, _rest) = state.stack
-        return head
 
-    def _get_str_config_value(self, label: str) -> str:
-        str_ = self._run_code_for_single_value(f"repl[{label}] ->")
-        if str_.tag != "str":
-            raise RuntimeError(f"Expected string for `repl[{label}]`, got {str_}")
-        return str_.value
 
-    def _get_bool_config_value(self, label: str) -> bool:
-        atom = self._run_code_for_single_value(f"repl[{label}] ->")
-        if atom.tag != "atom":
-            raise RuntimeError(f"Expected atom for `repl[{label}]`, got {atom}")
-        if atom.value not in ["true", "false"]:
-            raise RuntimeError(f"Expected :true or :False for `repl[{label}]`, got {atom}")
-        return atom.value == "true"
 
-    @property
-    def _string_before_stack(self) -> str:
-        return self._get_str_config_value("before-stack")
-
-    @property
-    def _string_before_output(self) -> str:
-        return self._get_str_config_value("before-output")
-
-    @property
-    def _string_after_output(self) -> str:
-        return self._get_str_config_value("after-output")
-
-    @property
-    def _prompt(self) -> str:
-        return self._get_str_config_value("prompt")
-
-    @property
-    def _multiline_prompt(self) -> str:
-        return self._get_str_config_value("ml-prompt")
-
-    @property
-    def _is_stack_display_on(self) -> bool:
-        return self._get_bool_config_value("display-stack")
 
 
 def repl():
