@@ -3,7 +3,7 @@ import pprint
 from typing import Sequence, TypeVar, Tuple
 from ..vm_utils import render_value_as_source
 from ..builtin_utils import Module, Fail
-from ..types import Atom, Instruction, State, Value, Stack, Scope, Int, Vec
+from ..types import Atom, Box, Instruction, State, Value, Stack, Scope, Int, Vec
 
 from collections import deque
 
@@ -81,6 +81,49 @@ def _stack_to_vec(stack: Stack) -> Vec:
     else:
         head, rest = stack
         return Vec((head, _stack_to_vec(rest)))
+
+
+@module.register_simple("box-id?")
+def box_id(stack: T[V, S], scope: Scope, fail: Fail):
+    (box, rest) = stack
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+    return (Int(box.id), rest), scope
+
+
+@module.register("box-transactions?")
+def box_transactions(state: State, fail: Fail):
+    (box, rest) = state.infinite_stack()
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+    return state.with_stack(rest).push(_stack_to_vec(state.read_box(box.id)))
+
+
+@module.register("box-info!")
+def box_info(state: State, fail: Fail):
+    (box, rest) = state.infinite_stack()
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+    print("Box id:", box.id)
+    transaction_repr = render_value_as_source(_stack_to_vec(state.boxes[box.id]))
+    print("Box transactions", transaction_repr)
+    return state.with_stack(rest)
+
+
+@module.register("box-exists?")
+def does_box_exist(state: State, fail: Fail):
+    (box, rest) = state.infinite_stack()
+    if box.tag != "box":
+        fail(f"{render_value_as_source(box)} is not a box")
+    return state.with_stack(rest).push(Atom.bool(box.id in state.boxes))
+
+
+@module.register_simple("make-box!")
+def make_box(stack: T[V, S], scope: Scope, fail: Fail):
+    (id, rest) = stack
+    if id.tag != "int":
+        fail(f"{render_value_as_source(id)} is not an int")
+    return (Box(id.value), rest), scope
 
 
 @module.register("boxes?")
