@@ -1,3 +1,6 @@
+from .trie import Trie
+
+
 DEFAULT_PRELUDE = R"""
 :repl-utils :all                               import
 :inspect    :prefix                            import
@@ -74,7 +77,7 @@ hide-stack
 "---------------" println
 """
 
-BACKSLASH_MAPPING = {
+BACKSLASH_MAPPING = Trie({
     "lambda": "λ",
     "le": "≤",
     "ge": "≥",
@@ -99,4 +102,4 @@ BACKSLASH_MAPPING = {
     "larr": "←",
     "T": "⊤",
     "F": "⊥",
-}
+})

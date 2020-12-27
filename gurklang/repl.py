@@ -4,12 +4,11 @@ Read Eval Print Loop
 The essential interactive programming tool!
 """
 from __future__ import annotations
-from enum import Enum
 from gurklang.vm_utils import render_value_as_source, stringify_stack
 from .repl_constants import DEFAULT_PRELUDE, BACKSLASH_MAPPING
 import sys
 import traceback
-from typing import Any, Callable, Iterator, Optional, TextIO, Tuple, final
+from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
 
 import click
 
@@ -18,7 +17,7 @@ Fore: Any
 Style: Any
 init()
 
-from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value
+from .types import Code, CodeFlags, Instruction, Stack, State, Value
 from .vm import call_with_middleware, run, call, make_scope
 from .parser import parse, lex, ParseError
 
