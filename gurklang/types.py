@@ -76,6 +76,9 @@ class State:
         return self.box_in_transaction.get(id, False)
 
     def infinite_stack(self) -> InfiniteStack:
+        """
+        Get the scope's stack, but pretend that it's infinitely deep.
+        """
         return self.stack # type: ignore
 
     def push(self, *values: "Value"):
@@ -85,6 +88,8 @@ class State:
         return self.with_stack(stack)
 
     def read_box(self, id: int) -> Stack:
+        if id not in self.boxes:
+            raise RuntimeError(f"Trying to read undefined box with id {id}")
         return self.boxes[id]
 
     def pop_box(self, id: int) -> Tuple["Value", "State"]:

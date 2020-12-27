@@ -154,8 +154,17 @@ def __change_box(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: F
     )
     return (code, rest), scope
 
+
 module.add("<=", raw_function(Put(__change_box), CallByValue(), CallByValue(), name="<="))
 
 
+@module.register("<X-")
+def kill_box(state: State, fail: Fail):
+    if state.stack is None:
+        fail("Calling `<X-` on an empty stack")
+    box, rest = state.infinite_stack()
 
-# :boxes :all import :inspect ( boxes! ) import 42 box :b var
+    if box.tag != "box":
+        fail(f"Calling `<X-` on {render_value_as_source(box)}")
+
+    return state.kill_box(box.id).with_stack(rest)
