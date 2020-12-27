@@ -3,6 +3,7 @@ import time
 import gurklang.vm as vm
 from gurklang.parser import parse
 from gurklang.types import Instruction, Int
+from hypothesis import given, infer
 
 
 def run(code):
@@ -34,7 +35,7 @@ def test_factorial():
     assert run(R"""
     :math (* -) import
     { { (1) {}
-        (. .) { dup 1 - rot * swap n! }
+        (. .) { dup 1 - unrot * swap n! }
       } case
     } :n! jar
     1 10 n!
@@ -70,3 +71,36 @@ def test_higher_order_functions(capsys):
     40 add5 println  #=> 45
     """)
     assert capsys.readouterr().out == '42\n45\n'
+
+
+def test_fizzbuzz(capsys):
+    def py_fizzbuzz(n: int):
+        s = ""
+        if n % 3 == 0: s += "Fizz"
+        if n % 5 == 0: s += "Buzz"
+        if s == "": s = str(n)
+        return s
+
+    run("""
+:math (+ %) import
+
+{ :n var
+  n 3 % n 5 %
+  { (0 0) { "FizzBuzz" }
+    (0 _) { "Fizz"     }
+    (_ 0) { "Buzz"     }
+    (_ _) { n str      }
+  } case
+} :--fizzbuzz jar
+
+{ dup
+  101 =
+  { drop }
+  { dup --fizzbuzz println 1 + fizzbuzz }
+  if !
+} :fizzbuzz jar
+
+1 fizzbuzz
+    """)
+    expected = "\n".join(map(py_fizzbuzz, range(1, 101))) + "\n"
+    assert capsys.readouterr().out == expected

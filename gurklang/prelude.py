@@ -43,13 +43,14 @@ def tuck(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 @module.register_simple()
 def rot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (z, (y, (x, rest))) = stack
-    return (y, (x, (z, rest))), scope
+    return (x, (z, (y, rest))), scope
 
 
 @module.register_simple()
 def unrot(stack: T[V, T[V, T[V, S]]], scope: Scope, fail: Fail):
     (z, (y, (x, rest))) = stack
-    return (x, (z, (y, rest))), scope
+    return (y, (x, (z, rest))), scope
+
 
 
 @module.register_simple()

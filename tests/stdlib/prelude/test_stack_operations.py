@@ -57,20 +57,20 @@ def test_over():
 
 
 @forall(Int, Int, Int)
-def test_rot():
-    """
-    :c var :b var :a var
-
-    {a b c rot}, {c a b}, =
-    """
-
-
-@forall(Int, Int, Int)
 def test_unrot():
     """
     :c var :b var :a var
 
-    {a b c unrot}, {b c a}, =
+    {a b c unrot}, {c a b}, =
+    """
+
+
+@forall(Int, Int, Int)
+def test_rot():
+    """
+    :c var :b var :a var
+
+    {a b c rot}, {b c a}, =
     """
 
 
