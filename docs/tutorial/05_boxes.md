@@ -17,7 +17,7 @@ Operations on boxes are located in the `boxes` standard module.
 
 To create a box, you need to call the `box` function with its initial value:
 
-```{.erlang hl_lines="1 3"}
+```gurk
 :boxes ( box ) import
 
 0 box :my-box var
