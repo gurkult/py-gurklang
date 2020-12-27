@@ -8,7 +8,7 @@ from gurklang.vm_utils import render_value_as_source, stringify_stack
 from .repl_constants import DEFAULT_PRELUDE, BACKSLASH_MAPPING
 import sys
 import traceback
-from typing import Any, Callable, Iterator, Optional, TextIO, Tuple
+from typing import Any, Callable, Iterable, Iterator, Optional, TextIO, Tuple
 
 import click
 
@@ -37,6 +37,13 @@ def backspace(size: int = 1):
 
 def inline_error_message(message: str):
     click.secho(message, color=True, fg="white", bg="red", nl=False)
+    click.getchar(echo=False)
+    backspace(len(message))
+
+
+def suggest_inline_variants(variants: Iterable[Any], fg: str = "white", bg: str = "blue"):
+    message = " ".join(variants)
+    click.secho(message, color=True, fg=fg, bg=bg, dim=True, nl=False)
     click.getchar(echo=False)
     backspace(len(message))
 
@@ -234,13 +241,22 @@ class InputMethod:
             if accumulated == "":
                 backspace()
                 return True, "\\"
-        elif char in (" ", ENTER):
+        elif char in (" ", ENTER, "\t") and accumulated != "":
+            # lam -> [("bda", "λ")]
+            completions = [(k[len(accumulated):], v) for k, v in BACKSLASH_MAPPING.prefix_search(accumulated)]
+
             if accumulated in BACKSLASH_MAPPING:
                 backspace(len(accumulated) + 1)
                 return True, BACKSLASH_MAPPING[accumulated]
-            else:
+            elif len(completions) == 1:
+                backspace(len(accumulated) + 1)
+                return True, BACKSLASH_MAPPING[accumulated + completions[0][0]]
+            elif completions == []:
                 inline_error_message("not found")
-                return False, accumulated
+            else:
+                suggest_inline_variants(
+                    f"{completion}({result})" for completion, result in completions
+                )
         elif is_backspace(char):
             if accumulated == "":
                 backspace()
