@@ -61,7 +61,7 @@ def test_higher_order_functions(capsys):
     :math ( + ) import
     :inspect ( code-dump ) import
 
-    { :f var :x var { x f ! } } :my-close jar
+    { :f def :x def { x f ! } } :my-close jar
 
     { { + } my-close } :make-adder jar
 
@@ -84,7 +84,7 @@ def test_fizzbuzz(capsys):
     run("""
 :math (+ %) import
 
-{ :n var
+{ :n def
   n 3 % n 5 %
   { (0 0) { "FizzBuzz" }
     (0 _) { "Fizz"     }

@@ -300,7 +300,7 @@ class Vec:
 
 @dataclass(frozen=True)
 class Code:
-    """Code value like { :b var :a var b a }"""
+    """Code value like { :b def :a def b a }"""
     instructions: Sequence[Instruction]
     closure: Optional[Scope]
     flags: CodeFlags = CodeFlags.EMPTY

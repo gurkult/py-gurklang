@@ -129,7 +129,7 @@ def __swap(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: Fail):
 def __change_box(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: Fail):
     """
     {
-      :fn var :a-box var
+      :fn def :a-box def
         a-box <[
             a-box -!> fn !
             a-box swap <-

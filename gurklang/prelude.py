@@ -133,8 +133,8 @@ def jar(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     return rest, scope.with_member(identifier.value, code)
 
 
-@module.register_simple()
-def var(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+@module.register_simple("def")
+def def_(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     """
     Store a value by a name
     """
@@ -415,7 +415,7 @@ def __match_case(stack: Stack, scope: Scope, fail: Fail):
         new_stack, new_variables = matched
         insns = list(action.instructions)
         for k, v in new_variables.items():
-            insns[:0] = [Put(v), CallByValue(), Put(Atom(k)), Put(var), CallByValue()]
+            insns[:0] = [Put(v), CallByValue(), Put(Atom(k)), Put(def_), CallByValue()]
         action = Code(instructions=insns, closure=action.closure, flags=action.flags, source_code=action.source_code)
         return (action, new_stack), scope
     return stack, scope
