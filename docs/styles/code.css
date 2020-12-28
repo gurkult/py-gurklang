@@ -50,3 +50,37 @@
 .hljs-section-comment:hover {
     background: #292929;
 }
+
+/* Tooltip container */
+.tooltip {
+    display: inline-block;
+    position: relative;
+    border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+    display: inline-block;
+    visibility: hidden;
+    display: inline;
+    opacity: 0;
+    background-color: rgba(45, 45, 45, 0.75);
+    color: #fff;
+    font-weight: 400;
+    font-family: Roboto, sans-serif;
+    text-align: left;
+    padding: 4px;
+    border-radius: 6px;
+
+    transition: 0.25s;
+
+    /* Position the tooltip text */
+    position: absolute;
+    z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

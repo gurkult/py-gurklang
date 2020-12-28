@@ -111,3 +111,63 @@ hljs.registerLanguage('gurklang-repl', gurklangRepl);
 
 
 hljs.initHighlighting();
+
+
+/// Tooltip stuff:
+// TODO: REFACTOR
+
+const htmlToElement = html => {
+    const template = document.createElement('template');
+    template.innerHTML = html.trim();
+    return template.content.firstChild;
+};
+
+const partialReduce = (a, f) => x => a.reduce(f, x);
+
+const replacer = (...replacements) => string => replacements.reduce(
+    (acc, [pattern, replacement]) => acc.replace(pattern, replacement),
+    string
+);
+
+
+const escapeHtml = replacer(
+    [/&/g, "&amp;"],
+    [/</g, "&lt;"],
+    [/>/g, "&gt;"],
+    [/"/g, "&quot;"],
+    [/'/g, "&#039;"]
+);
+
+const parseDescription = replacer(
+    [/\*(?:[^*]|\\\*)+\*/g, m => `<i>${m.slice(1, -1)}</i>`],
+    [/`(?:[^`]|\\\`)+`/g, m => `<tt>${m.slice(1, -1)}</tt>`],
+);
+
+const attachTooltipToNode = node => {
+    const name = node.textContent;
+    const definition = window.nameDefinitions[name]
+    if (definition) {
+        const {module, explanation, stackDiagram} = definition;
+        const parsedExplanation = parseDescription(escapeHtml(explanation));
+        node.classList.add('tooltip');
+        node.appendChild(htmlToElement(
+              `<span class="tooltiptext">`
+            + `<b>${module}.${name}</b> `
+            + `<br/>${parsedExplanation}`
+            + `<br/><tt>${escapeHtml(stackDiagram)}</tt>`
+            + `</span>`
+        ));
+        console.log({definition});
+    }
+}
+
+// wait until the definitions load, then attach them
+const intervalId = setInterval(
+    () => {
+        if (!window.nameDefinitions)
+            return;
+        clearInterval(intervalId);
+        document.querySelectorAll('.hljs-variable').forEach(attachTooltipToNode);
+    },
+    100
+);
