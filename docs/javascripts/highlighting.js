@@ -22,7 +22,7 @@ const atom = {
 
 const identifier = {
     className: 'variable',
-    begin: /(?![:+-])[^\"'(){}# \n\t]+/,
+    begin: /(?!:|[+-]?\d)[^\"'(){}# \n\t]+/,
 };
 
 const replPrompt = {
@@ -157,7 +157,7 @@ const attachTooltipToNode = node => {
             + `<br/><tt>${escapeHtml(stackDiagram)}</tt>`
             + `</span>`
         ));
-        console.log({definition});
+        console.log({name, definition});
     }
 }
 

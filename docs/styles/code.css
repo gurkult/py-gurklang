@@ -43,12 +43,17 @@
 
 .hljs-section-comment {
     display: inline-block;
-    color: #3f3f3f;
+    color: #2e2e2e;
+    outline-offset: 2px;
+    outline-width: 2px;
+    outline-color: #000;
+    outline-style: solid;
     transition: 0.25s;
 }
 
 .hljs-section-comment:hover {
-    background: #292929;
+    outline-color: #fff;
+    background: #111111;
 }
 
 /* Tooltip container */
@@ -64,7 +69,7 @@
     visibility: hidden;
     display: inline;
     opacity: 0;
-    background-color: rgba(45, 45, 45, 0.75);
+    background-color: rgba(45, 45, 45, 0.92);
     color: #fff;
     font-weight: 400;
     font-family: Roboto, sans-serif;
