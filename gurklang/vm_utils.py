@@ -1,6 +1,5 @@
-from typing import Union
-from .types import Atom, Scope, Stack, Value, Vec
-from typing import Any, Iterator, List, Dict, Literal
+from .types import Scope, Stack, Value, Vec
+from typing import Any, Iterator, List, Dict
 
 
 def stringify_value(v: Value, depth: int = 0):

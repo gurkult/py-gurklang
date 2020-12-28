@@ -6,15 +6,19 @@ from gurklang.types import (
     Scope, Stack, Instruction, Code, State, Value, Vec
 )
 from collections import deque
+import threading
 
 
 MiddlewareT = Callable[[Instruction, Stack, Stack], None]
 
 
+_SCOPE_ID_LOCK = threading.Lock()
 _SCOPE_ID = 0
 def generate_scope_id():
     global _SCOPE_ID
-    _SCOPE_ID += 1
+    _SCOPE_ID_LOCK.__enter__
+    with _SCOPE_ID_LOCK:
+        _SCOPE_ID += 1
     return _SCOPE_ID
 
 

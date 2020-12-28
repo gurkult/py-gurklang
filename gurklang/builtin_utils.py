@@ -5,8 +5,8 @@ Utilities for creating built-in modules
 from dataclasses import field, dataclass
 from immutables import Map
 from typing import Callable,  NoReturn, Optional, TypeVar, Dict, Tuple
-from .vm_utils import repr_stack, stringify_value
-from gurklang.types import Code, CodeFlags, Instruction, Scope, Stack, State, Value, NativeFunction
+import gurklang.vm_utils as vm_utils
+from gurklang.types import Code, CodeFlags, Instruction, Scope, Stack, State, Value, NativeFunction, Vec
 
 Z = TypeVar("Z", bound=Stack, contravariant=True)
 
@@ -14,7 +14,7 @@ Z = TypeVar("Z", bound=Stack, contravariant=True)
 def _fail(name: str, reason: str, stack: Stack, scope: Scope):
     print("Failure in function", name)
     print("Reason:", reason)
-    print("> Stack: ", "[" + " ".join(map(stringify_value, repr_stack(stack))) + "]")
+    print("> Stack: ", "[" + " ".join(map(vm_utils.stringify_value, vm_utils.repr_stack(stack))) + "]")
     raise RuntimeError(name, reason)
 
 
@@ -87,19 +87,27 @@ def raw_function(*instructions: Instruction, name: str = "<raw>", source_code: O
         source_code=source_code
     )
 
-R"""saybegin
-!gurklang
 
-:math ( + ) import
 
-1 :x var
-x println
+def vec_to_stack(t: Value, fail: Fail) -> Stack:
+    stack = None
+    if t.tag != "vec":
+        fail(f"expected tuple, got {t}")
+    while True:
+        if len(t.values) == 0:
+            return stack
+        if len(t.values) != 2:
+            fail(f"got tuple of size {len(t.values)} {vm_utils.stringify_value(t)}, expected 2")
+        head, rest = t.values
+        if rest.tag != "vec":
+            fail(f"expected tuple as second element, got {rest}")
+        t = rest
+        stack = (head, stack)
 
-{ x 1 + :x var } parent-scope :x++ jar
 
-x++
-x println
-
-x++ x++
-x println
-sayend"""
+def stack_to_vec(stack: Stack) -> Vec:
+    rv = Vec([])
+    while stack is not None:
+        head, stack = stack  # type: ignore
+        rv = Vec([head, rv])
+    return rv
