@@ -19,6 +19,8 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight:
       use_pygments: false
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.superfences
   - admonition
 
