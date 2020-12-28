@@ -22,7 +22,7 @@ const atom = {
 
 const identifier = {
     className: 'variable',
-    begin: /(?!:|[+-]?\d)[^\"'(){}# \n\t]+/,
+    begin: /(?!:|[+-]?\d(?:[\"'(){}# \n\t]|$))[^\"'(){}# \n\t]+/,
 };
 
 const replPrompt = {
@@ -88,23 +88,23 @@ const gurklangError = {
 
 const gurklangRepl = hljs => {
     const ellipsis = {
-        class: 'meta',
+        className: 'meta',
         begin: /^\.\.\. /,
         end: '$',
         contains: DEFAULT_CONTAINS,
     }
 
     const replOnly = {
-        class: 'meta',
-        begin: '^>>> ',
+        className: 'meta',
+        begin: '^>>>',
         end: '$',
-        contains: [...DEFAULT_CONTAINS, ellipsis],
+        contains: [ellipsis, ...DEFAULT_CONTAINS],
     };
 
     return {
         name: 'Gurklang REPL',
         aliases: ['gurkrepl', 'gurklang-repl'],
-        contains: [replOnly, gurklangError],
+        contains: [replOnly, ellipsis, gurklangError],
     };
 };
 hljs.registerLanguage('gurklang-repl', gurklangRepl);
@@ -152,18 +152,25 @@ const parseDescription = replacer(
 const attachTooltipToNode = node => {
     const name = node.textContent;
     const definition = window.nameDefinitions[name]
-    if (definition) {
-        const {module, explanation, stackDiagram} = definition;
-        const parsedExplanation = parseDescription(escapeHtml(explanation));
-        node.classList.add('tooltip');
-        node.appendChild(htmlToElement(
-              `<span class="tooltiptext">`
-            + `<b>${escapeHtml(module)}.${escapeHtml(name)}</b> `
-            + `<br/>${parsedExplanation}`
-            + `<br/><tt>${escapeHtml(stackDiagram)}</tt>`
-            + `</span>`
-        ));
-    }
+    if (!definition)
+        return;
+    const {module, explanation, stackDiagram} = definition;
+    const parsedExplanation = parseDescription(escapeHtml(explanation));
+    node.classList.add('tooltip');
+    const qualifiedName = module === "prelude" ? name : `${module}.${name}`;
+    node.appendChild(htmlToElement(
+            `<div class="tooltiptext docs-tooltip">`
+        + `    <div class="docs-tooltip-title">`
+        + `        ${escapeHtml(qualifiedName)}`
+        + `    </div>`
+        + `    <div class="docs-tooltip-explanation">`
+        + `        ${parsedExplanation}`
+        + `    </div>`
+        + `    <div class="docs-tooltip-stack-diagram">`
+        + `        ${escapeHtml(stackDiagram)}`
+        + `    </div>`
+        + `</div>`
+    ));
 }
 
 
@@ -179,8 +186,7 @@ const displayTooltipOnTopOfEverything = node => {
     document.body.appendChild(node);
     node.style.position = "absolute";
     node.style.left = `${left}px`;
-    node.style.top = `${top + scrollY + 18}px`;
-    node.style["z-index"] = "1000";
+    node.style.top = `${top + scrollY + 24}px`;
 
     // when clicking on the original variable, toggle the tooltip
     node.style.visibility = 'hidden';
@@ -190,11 +196,12 @@ const displayTooltipOnTopOfEverything = node => {
     });
 
     // we need to recalculate the coordinates when the window gets resized
-    window.addEventListener('resize', e => {
+    const onResize = () => {
         const {left, top} = parent.getBoundingClientRect();
         node.style.left = `${left + 32}px`;
         node.style.top = `${top + scrollY}px`;
-    })
+    };
+    window.addEventListener('resize', onResize);
 };
 
 

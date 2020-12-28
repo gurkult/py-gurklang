@@ -4,8 +4,8 @@
 
 .docs-tooltip {
     display: inline-grid;
-    background-color: rgba(0, 0, 0, 0.92);
-    color: #fff;
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #000;
 
     font-size: 18px;
     font-family: Roboto, sans-serif;
@@ -17,7 +17,7 @@
 
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 2em auto;
-    justify-items: stretch;
+    justify-items: center;
     align-items: center;
     justify-content: center;
 }
@@ -50,38 +50,39 @@
 
 .hljs.gurklang,
 .hljs.gurklang-repl {
-	display: block;
+    display: block;
     overflow-x: auto;
-    padding: 0.7em;
-    border-radius: 8px;
-	background: rgb(44, 19, 32) !important;
-	color: #ffffff !important;
+    padding: 0.5em;
+    background: rgb(244, 244, 246) !important;
+    color: #000 !important;
     font-size: 16px !important;
     position: relative;
 }
 
 .hljs-comment {
-    color: #afb6a9;
+    font-style: italic;
+    color: #92958f;
 }
 
 .hljs-string {
-    color: #b2dd8c;
+    font-weight: 600;
+    color: hsl(119, 34%, 50%);
 }
 
 .hljs-number {
-    color: #86e6d9;
+    color: hsl(198, 99%, 37%);
 }
 
 .hljs-symbol {
-    color: rgb(255, 113, 91);
+    color: rgb(142, 30, 207);
 }
 
 .hljs-variable {
-    color: #f3bb53;
+    color: hsl(7, 100%, 58%);;
 }
 
 .hljs-meta {
-    color: #7299b9;
+    color: #4554e2;
 }
 
 .hljs-deletion {
@@ -89,17 +90,18 @@
 }
 
 .hljs-punctuation {
-    color: #fff;
+    color: #000;
 }
 
 .hljs-section-comment {
     display: block;
+    margin: 0.25em;
     padding: 0.25em;
-    border-radius: 4px;
-    color: #5a5a5a;
-    border-width: 2px;
-    border-color: rgb(255, 255, 255, 0.5);
-    border-style: solid;
-    background: rgb(0, 0, 0, 0.3);
+    color: #d3d3d3;
+    outline-offset: 2px;
+    outline-width: 2px;
+    outline-color: rgba(134, 134, 134, 0.5);
+    outline-style: solid;
+    background: rgba(255, 255, 255, 0.3);
     transition: 0.25s;
 }
