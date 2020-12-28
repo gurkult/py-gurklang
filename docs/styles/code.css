@@ -1,11 +1,12 @@
 .hljs.gurklang,
 .hljs.gurklang-repl {
 	display: block;
-	overflow-x: auto;
-	padding: .5em;
+    overflow-x: auto;
+    padding: 0.5em;
 	background: #000 !important;
 	color: #ffffff !important;
     font-size: 16px !important;
+    position: relative;
 }
 
 .hljs-comment {
@@ -56,36 +57,26 @@
     background: #111111;
 }
 
+
+
 /* Tooltip container */
-.tooltip {
-    display: inline-block;
-    position: relative;
-    border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+.tooltip:hover {
+    cursor: pointer;
 }
 
 /* Tooltip text */
-.tooltip .tooltiptext {
+.tooltiptext {
     display: inline-block;
-    visibility: hidden;
-    display: inline;
-    opacity: 0;
     background-color: rgba(45, 45, 45, 0.92);
     color: #fff;
+
+    font-size: 18px;
     font-weight: 400;
     font-family: Roboto, sans-serif;
     text-align: left;
+
     padding: 4px;
     border-radius: 6px;
 
-    transition: 0.25s;
-
-    /* Position the tooltip text */
     position: absolute;
-    z-index: 1;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-    opacity: 1;
 }

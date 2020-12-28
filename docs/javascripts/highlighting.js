@@ -143,6 +143,12 @@ const parseDescription = replacer(
     [/`(?:[^`]|\\\`)+`/g, m => `<tt>${m.slice(1, -1)}</tt>`],
 );
 
+
+/////////////////////////////////////////////
+// DOM manipulations                       //
+// Lasciate ogni speranza, voi ch'entrate  //
+/////////////////////////////////////////////
+
 const attachTooltipToNode = node => {
     const name = node.textContent;
     const definition = window.nameDefinitions[name]
@@ -157,9 +163,40 @@ const attachTooltipToNode = node => {
             + `<br/><tt>${escapeHtml(stackDiagram)}</tt>`
             + `</span>`
         ));
-        console.log({name, definition});
     }
 }
+
+
+const displayTooltipOnTopOfEverything = node => {
+    // keep track of whether the tooltip is shown
+    let show = false;
+
+    // unattach the tooltip box from its original parent,
+    // attach it to <body>, and move it to the right place
+    const parent = node.parentElement;
+    const {left, top} = parent.getBoundingClientRect();
+    parent.removeChild(node);
+    document.body.appendChild(node);
+    node.style.position = "absolute";
+    node.style.left = `${left}px`;
+    node.style.top = `${top + scrollY + 18}px`;
+    node.style["z-index"] = "1000";
+
+    // when clicking on the original variable, toggle the tooltip
+    node.style.visibility = 'hidden';
+    parent.addEventListener('click', () => {
+        show = !show;
+        node.style.visibility = show ? 'visible' : 'hidden';
+    });
+
+    // we need to recalculate the coordinates when the window gets resized
+    window.addEventListener('resize', e => {
+        const {left, top} = parent.getBoundingClientRect();
+        node.style.left = `${left + 32}px`;
+        node.style.top = `${top + scrollY}px`;
+    })
+};
+
 
 // wait until the definitions load, then attach them
 const intervalId = setInterval(
@@ -168,6 +205,7 @@ const intervalId = setInterval(
             return;
         clearInterval(intervalId);
         document.querySelectorAll('.hljs-variable').forEach(attachTooltipToNode);
+        document.querySelectorAll('.tooltiptext').forEach(displayTooltipOnTopOfEverything)
     },
     100
 );

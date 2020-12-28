@@ -107,6 +107,6 @@ window.nameDefinitions = {
     },
 };
 
-for (const [name, definition] of {...window.nameDefinitions}) {
+for (const [name, definition] of Object.entries(window.nameDefinitions)) {
     window.nameDefinitions[`${definition.module}.${name}`] = definition;
 }
