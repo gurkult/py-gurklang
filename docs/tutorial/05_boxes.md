@@ -21,7 +21,7 @@ To create a box, you need to call the `box` function with its initial value:
 :boxes ( box ) import
 
 # box (T -- box[T])
-0 box :my-box var
+0 box :my-box def
 ```
 
 You can read the value you've put in the box:
@@ -29,7 +29,7 @@ You can read the value you've put in the box:
 ```gurk
 :boxes ( box -> ) import
 
-0 box :my-box var
+0 box :my-box def
 
 # -> (box[T] -- T)
 my-box -> println  # 0
@@ -43,7 +43,7 @@ to store something new in the box:
 ```gurk
 :boxes ( box -> <- ) import
 
-0 box :my-box var
+0 box :my-box def
 
 box -> println  # 0
 
@@ -64,7 +64,7 @@ There's a shorthand for that, using the `<=` function:
 ```gurk
 :boxes ( box -> <= ) import
 
-0 box :my-box var
+0 box :my-box def
 
 my-box -> println  # 0
 
@@ -103,7 +103,7 @@ This is actually what styling functions like `repl[style:box]` do:
 
 Suppose that you have a box that stores a list of even length:
 ```gurk
-() box :list var
+() box :list def
 ```
 
 ...and you want to append two elements, `1` and `2` to it like this:
@@ -113,7 +113,7 @@ list {:rest {2 rest},} <=
 ```
 ...or maybe like this:
 ```gurk
-{ :x var {:rest var {x rest},} <= } :<-cons- jar
+{ :x def {:rest def {x rest},} <= } :<-cons- jar
 
 list 1 <-cons-
 list 2 <-cons-
@@ -136,11 +136,11 @@ work on a temporary copy of the box state and then save it.
 :boxes ( box -> <- <= <[ ]> ) import
 
 # <-cons- (box[list[T]] T --)
-{ :x var
-    {:rest var {x rest},} <=
+{ :x def
+    {:rest def {x rest},} <=
 } :<-cons- jar
 
-() box :list var
+() box :list def
 
 #((
 # <[ (box[_] --)
@@ -199,7 +199,7 @@ This is how you can see the current box state:
 
 This is how you can make a box given an ID:
 ```gurkrepl
->>> 2 inspect.make-box! :b var
+>>> 2 inspect.make-box! :b def
 >>> b -> peek drop
 ('>>> ' ())
 >>>
@@ -207,7 +207,7 @@ This is how you can make a box given an ID:
  dfguidfjgkdfjg
 This is how you can see the current state of a box:
 ```gurkrepl
->>> 0 box :b var
+>>> 0 box :b def
 >>> b inspect.box-info!
 Box id: 7
 Box transactions: (0 ())

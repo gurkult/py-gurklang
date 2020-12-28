@@ -29,7 +29,7 @@ Possible word types:
 
 Example of a valid program:
 ```elixir
-{ :x var { x + } } :make_adder jar
+{ :x def { x + } } :make_adder jar
 5 make_adder :add5 jar
 
 "Meaning of life, the universe and everything: " print
@@ -60,22 +60,22 @@ which is given a name, and a _function call_ is the act of executing that action
 the top two elements of the stack and, assuming they're integers, puts their
 sum on the stack.
 
-* Some functions can create local variables. For example, The `var` function creates
+* Some functions can create local variables. For example, The `def` function creates
 a local variable given an atom and a value. This program puts `6` on the stack:
 ```elixir
-1 :x var
-2 :y var
+1 :x def
+2 :y def
 
 x y  + y *
 ```
-What `var` actually does is: it captures the top value of the stack and creates
+What `def` actually does is: it captures the top value of the stack and creates
 a function, named the same as the atom, that puts that value onto the stack.
 
 * "Variables" aren't reassignable. You can only assign a value to a name once
 in a scope. For example, this will fail at runtime:
 ```elixir
-1 :x var
-2 :x var
+1 :x def
+2 :x def
 ```
 
 * Some functions produce _side effects_: print something to the screen, send a
@@ -136,13 +136,13 @@ To run a code value, you can use the built-in `!` function. For example, these p
 ```
 
 You can store a code value by a name using the `jar` function, which acts
-similarly to `var`:
+similarly to `def`:
 ```elixir
 { 3 + } :add3 jar
 
 10 add3 print  # output: 13
 ```
-The difference between `var` and `jar` is that `var` create a function that
+The difference between `def` and `jar` is that `def` create a function that
 puts a given value on the stack. So
 ```elixir
 {...} :x jar
@@ -151,7 +151,7 @@ x
 ```
  is the same as
 ```elixir
-{...} :x var
+{...} :x def
 # ...
 x !
 ```
@@ -160,13 +160,13 @@ x !
 ## Local scopes
 
 When a code value is ran, it is allocated its own local scope,
-so calling `var` or `jar` inside of it will not alter the global scope, but
+so calling `def` or `jar` inside of it will not alter the global scope, but
 only create local variables. Example:
 
 ```elixir
-5 :x var
+5 :x def
 
-{ :x var x x + } :double var
+{ :x def x x + } :double def
 
 10 double print  # output: 20
 x print          # output: 5
@@ -178,7 +178,7 @@ A function can be made "parent-scoped" with `parent-scope`. It means that the
 function will not reserve a local scope when called.
 
 ```elixir
-{ 6 :x var } parent-scope !
+{ 6 :x def } parent-scope !
 x println  # 6
 ```
 
@@ -190,7 +190,7 @@ to persist after the outer function is exited. For example, this is how you can
 create a function `f` that puts `5` three times on the stack:
 
 ```elixir
-{ :x var { x x x } } :make-putter jar
+{ :x def { x x x } } :make-putter jar
 
 5 make-putter :f jar
 

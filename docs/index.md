@@ -92,8 +92,8 @@ As you can see, both double and single quotes work.
 If you're just tired of spelling out some value every time, you can define a
 name!
 ```gurkrepl
->>> 42 :answer var
->>> "Hello, world!" :greeting var
+>>> 42 :answer def
+>>> "Hello, world!" :greeting def
 >>> answer peek
 (42 ())
 >>> greeting peek
@@ -158,7 +158,7 @@ Functional programming emphasizes:
     (7 ())
     ```
     ```gurkrepl
-    >>> { :f var  f ! f ! } :do-twice jar
+    >>> { :f def  f ! f ! } :do-twice jar
     >>> 5
     >>> peek
     (5 ())
@@ -169,13 +169,13 @@ Functional programming emphasizes:
 
 - Immutability: a definition is not a _variable_ &mdash; you can't reassign it.
     ```gurkrepl
-    >>> 3 :pi var
-    >>> 3 :e  var
-    >>> 2 :e  var
-    Failure in function var
+    >>> 3 :pi def
+    >>> 3 :e  def
+    >>> 2 :e  def
+    Failure in function def
     Reason: uncaught exception RuntimeError: Trying to reassign e
     > Stack:  [9 2 :e]
-    RuntimeError: var uncaught exception RuntimeError: Trying to reassign e
+    RuntimeError: def uncaught exception RuntimeError: Trying to reassign e
     Type traceback? for complete Python traceback
     ```
     There is a mechanism for managing mutable variables, but you'll rarely need it.
