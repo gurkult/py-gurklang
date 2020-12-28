@@ -158,7 +158,7 @@ const attachTooltipToNode = node => {
         node.classList.add('tooltip');
         node.appendChild(htmlToElement(
               `<span class="tooltiptext">`
-            + `<b>${module}.${name}</b> `
+            + `<b>${escapeHtml(module)}.${escapeHtml(name)}</b> `
             + `<br/>${parsedExplanation}`
             + `<br/><tt>${escapeHtml(stackDiagram)}</tt>`
             + `</span>`
