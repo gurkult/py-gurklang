@@ -32,8 +32,6 @@ class Scope:
         return f"<Scope {self.id!r}: {' '.join(self.values.keys())}, id=, parent={self.parent!r}>"
 
     def without_member(self, key: str):
-        if key not in self.values:
-            return self
         return Scope(self.parent, self.id, self.values.delete(key))
 
     def with_member(self, key: str, value: Value) -> Scope:
