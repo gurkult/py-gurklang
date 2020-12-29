@@ -11,11 +11,37 @@ Z = TypeVar("Z", bound=Stack)
 
 
 @module.register_simple("<")
-def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def less_than(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return ([Atom("false"), Atom("true")][x.value < y.value], rest), scope
+    return (Atom.bool(x.value < y.value), rest), scope
+
+
+@module.register_simple(">")
+def greater_than(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"{x} cannot be compared with {y}")
+    return (Atom.bool(x.value > y.value), rest), scope
+
+
+@module.register_simple(">=")
+def greater_than_or_equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"{x} cannot be compared with {y}")
+    return (Atom.bool(x.value >= y.value), rest), scope
+module.add("≥", greater_than_or_equals)
+
+
+@module.register_simple("<=")
+def less_than_or_equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (y, (x, rest)) = stack
+    if x.tag != "int" or y.tag != "int":
+        fail(f"{x} cannot be compared with {y}")
+    return (Atom.bool(x.value <= y.value), rest), scope
+module.add("≤", less_than_or_equals)
 
 
 @module.register_simple("+")
