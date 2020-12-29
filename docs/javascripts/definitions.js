@@ -64,9 +64,30 @@ addDefinitionsForModule(
             stackDiagram: "(a b c -- b c a)"
         },
         "unrot": {
-            explanation: "inverse of `rot`",
+            explanation: "Inverse of `rot`",
             stackDiagram: "(a b c -- c a b)"
         },
+        "sleep": {
+            explanation: "Accept an integer or fraction and sleep for that many seconds",
+            stackDiagram: "(q -- )",
+        },
+        "!": {
+            explanation: "Execute function",
+            stackDiagram: "(<*a (*a -- <*b) -- *b)"
+        },
+        "close": {
+            explanation: "Prepend putting a given value to the function instructions",
+            stackDiagram: "(<a (a *b -- *c) -- (*b -- *c))",
+        },
+        "forget": {
+            explanation: "Erase a definition",
+            stackDiagram: "(:name -- uplifting message to make up for your loss)"
+        },
+        "swap": {
+            explanation: "See stack diagram",
+            stackDiagram: "(a b -- b a)",
+        },
+
     }
 );
 
