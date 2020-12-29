@@ -95,13 +95,24 @@
 }
 
 .hljs-section-comment {
-    display: block;
+    display: inline-block;
+    width: 100%;
+    margin-top: 4px;
+    margin-bottom: 4px;
     padding: 0.25em;
     border-radius: 4px;
     color: #5a5a5a;
-    border-width: 2px;
-    border-color: rgb(255, 255, 255, 0.5);
-    border-style: solid;
+    border-left-width: 4px;
+    border-left-color: rgb(255, 255, 255, 0.5);
+    border-left-style: solid;
     background: rgb(0, 0, 0, 0.3);
     transition: 0.25s;
+}
+
+.hljs-section-comment.--good {
+    border-left-color: rgba(91, 250, 63, 0.514);
+}
+
+.hljs-section-comment.--bad {
+    border-left-color: rgba(255, 21, 21, 0.623);
 }

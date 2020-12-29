@@ -49,9 +49,23 @@ const sectionComment = {
     end: /#\)\)/,
 };
 
+const sectionCommentBad = {
+    className: 'section-comment --bad',
+    begin: /#\(\(bad/,
+    end: /#\)\)/,
+};
+
+const sectionCommentGood = {
+    className: 'section-comment --good',
+    begin: /#\(\(good/,
+    end: /#\)\)/,
+};
+
 const comment = hljs.COMMENT('#[^)][^)]', '$');
 
 const DEFAULT_CONTAINS = [
+    sectionCommentBad,
+    sectionCommentGood,
     sectionComment,
     comment,
     number,
@@ -66,6 +80,8 @@ const DEFAULT_CONTAINS = [
 vecLiteral.contains = DEFAULT_CONTAINS;
 codeLiteral.contains = DEFAULT_CONTAINS;
 sectionComment.contains = DEFAULT_CONTAINS;
+sectionCommentGood.contains = DEFAULT_CONTAINS;
+sectionCommentBad.contains = DEFAULT_CONTAINS;
 
 
 const gurklang = hljs => {
