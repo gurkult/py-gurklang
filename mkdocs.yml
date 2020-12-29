@@ -4,9 +4,10 @@ nav:
   - Intro: 'index.md'
   - Specification: 'specification.md'
   - Tutorial:
-    - Basics: 'tutorial/00_basics.md'
-    - Creating functions: 'tutorial/01_functions.md'
+    - 'Basics': 'tutorial/00_basics.md'
+    - 'Functions': 'tutorial/01_functions.md'
     - 'Mutable variables': 'tutorial/05_boxes.md'
+    - 'Snippets': 'tutorial/99_snippets.md'
 
 theme:
   name: material
@@ -17,6 +18,7 @@ plugins:
   - search
 
 markdown_extensions:
+  - pymdownx.details
   - pymdownx.highlight:
       use_pygments: false
   - pymdownx.arithmatex:
