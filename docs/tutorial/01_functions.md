@@ -1,4 +1,8 @@
-# Creating your own functions
+# Lorem Ipsum
+
+In category theory, a branch of mathematics, a monad (also triple, triad, standard construction and fundamental construction) is an endofunctor (a functor mapping a category to itself), together with two natural transformations required to fulfill certain coherence conditions.
+
+Monads are used in the theory of pairs of adjoint functors, and they generalize closure operators on partially ordered sets to arbitrary categories.
 
 
 ```gurk

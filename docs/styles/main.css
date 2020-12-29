@@ -1,0 +1,18 @@
+:root > * {
+    --md-primary-fg-color:        #2c8353;
+    --md-primary-fg-color--light: #78c0a8;
+    --md-primary-fg-color--dark:  #0e4123;
+
+    --md-hue: 136 !important;
+    --md-default-bg-color: hsla(var(--md-hue), 15%, 5%, 1) !important;
+    --md-default-fg-color: #fff !important;
+    --md-default-fg-color-light: #fff !important;
+    --md-default-fg-color:             hsla(var(--md-hue), 100%, 100%, 1);
+    --md-default-fg-color--light:      hsla(var(--md-hue), 75%, 97%, 1);
+    --md-default-fg-color--lighter:    hsla(var(--md-hue), 75%, 98%, 0.5);
+    --md-default-fg-color--lightest:   hsla(var(--md-hue), 75%, 99%, 0.25);
+    --md-default-bg-color:             hsla(var(--md-hue), 15%, 10%, 1);
+    --md-default-bg-color--light:      hsla(var(--md-hue), 15%, 11%, 0.54);
+    --md-default-bg-color--lighter:    hsla(var(--md-hue), 15%, 12%, 0.26);
+    --md-default-bg-color--lightest:   hsla(var(--md-hue), 15%, 15%, 0.07);
+}
