@@ -190,10 +190,9 @@ const attachTooltipToNode = node => {
 }
 
 
+const tooltipNodes = [];
 const displayTooltipOnTopOfEverything = node => {
     // keep track of whether the tooltip is shown
-    let show = false;
-
     // unattach the tooltip box from its original parent,
     // attach it to <body>, and move it to the right place
     const parent = node.parentElement;
@@ -204,12 +203,17 @@ const displayTooltipOnTopOfEverything = node => {
     node.style.left = `${left}px`;
     node.style.top = `${top + scrollY + 24}px`;
 
+    tooltipNodes.push(node);
+
     // when clicking on the original variable, toggle the tooltip
     node.style.visibility = 'hidden';
     parent.addEventListener('click', () => {
+        tooltipNodes.forEach(n => {
+            if (n !== node)
+                n.style.visibility = 'hidden'
+        });
         recalculatePosition();
-        show = !show;
-        node.style.visibility = show ? 'visible' : 'hidden';
+        node.style.visibility = node.style.visibility === 'visible' ? 'hidden' : 'visible';
     });
 
     // we need to recalculate the coordinates when the window gets resized

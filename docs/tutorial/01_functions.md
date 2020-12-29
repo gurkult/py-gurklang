@@ -12,7 +12,7 @@ Suppose that you need to write a function that finds $2^5$. It's not very hard:
 >>>
 ```
 
-But then you might want to find $3^5$, and $6^5$, and even $8^13$. Instead
+But then you might want to find $3^5$, and $6^5$, and even $8^{13}$. Instead
 of typing out essentially the same code again and again, you can create a
 function:
 ```gurkrepl
