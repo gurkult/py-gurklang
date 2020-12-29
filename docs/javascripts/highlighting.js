@@ -27,7 +27,7 @@ const identifier = {
 
 const replPrompt = {
     className: 'meta',
-    begin: ">>> ",
+    begin: ">>>",
     relevance: 10,
 };
 
