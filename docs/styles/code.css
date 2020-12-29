@@ -15,7 +15,7 @@
 
     position: absolute;
 
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(6em, 3fr) max-content;
     grid-template-rows: 2em auto;
     justify-items: stretch;
     align-items: center;
