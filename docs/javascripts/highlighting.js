@@ -207,17 +207,18 @@ const displayTooltipOnTopOfEverything = node => {
     // when clicking on the original variable, toggle the tooltip
     node.style.visibility = 'hidden';
     parent.addEventListener('click', () => {
+        recalculatePosition();
         show = !show;
         node.style.visibility = show ? 'visible' : 'hidden';
     });
 
     // we need to recalculate the coordinates when the window gets resized
-    const onResize = () => {
+    const recalculatePosition = () => {
         const {left, top} = parent.getBoundingClientRect();
-        node.style.left = `${left + 32}px`;
-        node.style.top = `${top + scrollY}px`;
+        node.style.left = `${left}px`;
+        node.style.top = `${top + scrollY + 24}px`;
     };
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', recalculatePosition);
 };
 
 
