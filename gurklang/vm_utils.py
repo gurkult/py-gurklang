@@ -20,7 +20,10 @@ def stringify_value(v: Value, depth: int = 0):
         else:
             return v.name
     elif v.tag == "vec":
-        return "(" + " ".join(render_value_as_source(x, depth + 1) for x in v.values) + ")"
+        return "(" + " ".join(
+            x.value if x.tag == "atom" else render_value_as_source(x, depth + 1)
+            for x in v.values
+        ) + ")"
     elif v.tag == "native":
         return f"`{v.name}`"
     elif v.tag == "box":
