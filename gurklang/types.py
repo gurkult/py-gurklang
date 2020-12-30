@@ -59,7 +59,14 @@ class Scope:
 
 # The stack is immutable and is modelled as a linked list:
 Stack = Optional[Tuple["Value", "Stack"]]
-InfiniteStack = Tuple["Value", Tuple["Value", Tuple["Value", "InfiniteStack"]]]
+InfiniteStack = Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value", "InfiniteStack"]]]]]]]]
 
 
 @dataclass(frozen=True)
