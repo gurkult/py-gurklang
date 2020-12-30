@@ -1,0 +1,9 @@
+:math ( < * - ) import
+
+{ dup 2 <
+  { drop 1 }
+  { dup 1 - n! * }
+  if !
+} :n! jar
+
+100 n! println

@@ -324,12 +324,12 @@ class Repl:
     class ExitDebug(BaseException):
         pass
 
-    def __init__(self, prelude: str = DEFAULT_PRELUDE):
+    def __init__(self, prelude: str = DEFAULT_PRELUDE, program: str = ""):
         state = run([])
         local_scope = make_scope(state.scope)
         state = state.with_scope(local_scope)
-        state = call(state, code(prelude))
-        self.state = state
+        state = call(state, code(program))
+        self.state = call(state, code(prelude))
         self.last_traceback = None
 
         self.sniper = StdoutSniper(
@@ -460,3 +460,7 @@ class Repl:
 
 def repl():
     Repl().run()
+
+
+def run_and_open_repl(source: str):
+    Repl(program=source).run()
