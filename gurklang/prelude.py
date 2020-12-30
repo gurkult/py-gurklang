@@ -113,6 +113,14 @@ def two_over(stack: T[V, T[V, T[V, T[V, S]]]], scope: Scope, fail: Fail):
     return (c, (d, (a, (b, (c, (d, rest)))))), scope
 
 
+@module.register_simple()
+def concat(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+    (a, (b, rest)) = stack
+    if not a.tag == b.tag == "str":
+        fail(f"{render_value_as_source(a)} and {render_value_as_source(b)} must be strings")
+    return (Str(b.value + a.value), rest), scope
+
+
 # </`stack` functions>
 
 @module.register_simple()
