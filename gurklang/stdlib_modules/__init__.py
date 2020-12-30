@@ -3,7 +3,7 @@ Standard library modules that aren't built-ins
 """
 from typing import List
 from ..builtin_utils import Module
-from . import math, inspect, coro, repl_utils, boxes, threading_
+from . import math, inspect, coro, repl_utils, boxes, threading_, strings
 
 
 modules: List[Module] = [
@@ -12,5 +12,6 @@ modules: List[Module] = [
     coro.module,
     repl_utils.module,
     boxes.module,
-    threading_.module
+    threading_.module,
+    strings.module,
 ]
