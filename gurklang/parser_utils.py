@@ -64,6 +64,10 @@ class Tokenizer(Generic[TokenName]):
         return Token
 
     @property
+    def token_stream_type(self) -> Type[TokenStream[TokenName]]:
+        return TokenStream
+
+    @property
     def token_name_type(self) -> Type[TokenName]:
         return str  # type: ignore
 

@@ -28,7 +28,7 @@ tokenizer = build_tokenizer(
 
 Token = tokenizer.token_type
 TokenName = tokenizer.token_name_type
-
+Stream = tokenizer.token_stream_type
 
 class ParseError(Exception):
     def __init__(self, source: str, while_parsing_what: str, token: Token):
