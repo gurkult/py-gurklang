@@ -99,7 +99,7 @@ class GurklangHighlighter(Preprocessor):
 
 class GurklangExtension(Extension):
     def extendMarkdown(self, md):
-        md.preprocessors.register(GurklangHighlighter(md), 'gurklang_highlighting', 10)
+        md.preprocessors.register(GurklangHighlighter(md), 'gurklang_highlighting', 175)
 
 
 def makeExtension(*args, **kwargs):
