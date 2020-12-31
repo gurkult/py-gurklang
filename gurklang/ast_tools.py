@@ -22,7 +22,7 @@ class Import(NamedTuple):
     imported_name: str
 
 
-def find_imports(ast: CodeLiteral, include_prelude: bool = False) -> Iterator[Tuple]:
+def find_imports(ast: CodeLiteral, include_prelude: bool = False) -> Iterator[Import]:
     if include_prelude:
         for name in prelude_module.members.keys():
             yield Import("prelude", name, name)

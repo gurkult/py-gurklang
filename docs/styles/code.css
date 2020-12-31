@@ -1,3 +1,8 @@
+code {
+    white-space: pre;
+    word-break: keep-all;
+}
+
 .tooltip:hover {
     cursor: pointer;
 }
@@ -48,8 +53,7 @@
 }
 
 
-.hljs.gurklang,
-.hljs.gurklang-repl {
+code[language=gurklang] {
 	display: block;
     overflow-x: auto;
     padding: 0.7em;
@@ -62,46 +66,54 @@
     position: relative;
 }
 
-.hljs-comment {
+.gurklang--token--comment {
     color: #afb6a9;
 }
 
-.hljs-string {
+.gurklang--token--string {
     color: #b2dd8c;
 }
 
-.hljs-number {
+.gurklang--token--int {
     color: #86e6d9;
 }
 
-.hljs-symbol {
+.gurklang--token--atom {
     color: rgb(255, 113, 91);
 }
 
-.hljs-variable {
+.gurklang--token--name {
     color: #f3bb53;
 }
 
-.hljs-meta {
+.gurklang--meta {
     color: #7299b9;
 }
 
-.hljs-deletion {
+.gurklang--deletion {
     color: #ff0800;
 }
 
-.hljs-punctuation {
+.gurklang--token--left_brace,
+.gurklang--token--right_brace,
+.gurklang--token--left_paren,
+.gurklang--token--right_paren {
     color: #fff;
 }
 
-.hljs-section-comment {
+.gurklang--section--begin {
+    color: #5a5a5a;
+}
+
+.gurklang--section--end {
+    color: #5a5a5a;
+}
+
+.gurklang--section {
     display: inline-block;
     width: 100%;
-    margin-top: 4px;
-    margin-bottom: 4px;
     padding: 0.25em;
     border-radius: 4px;
-    color: #5a5a5a;
     border-left-width: 4px;
     border-left-color: rgb(255, 255, 255, 0.5);
     border-left-style: solid;
@@ -109,10 +121,10 @@
     transition: 0.25s;
 }
 
-.hljs-section-comment.--good {
+.gurklang--section--good {
     border-left-color: rgba(91, 250, 63, 0.514);
 }
 
-.hljs-section-comment.--bad {
+.gurklang--section--bad {
     border-left-color: rgba(255, 21, 21, 0.623);
 }

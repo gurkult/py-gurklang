@@ -42,6 +42,10 @@ class ParseError(Exception):
         return self.token.position >= len(self.source) - 1
 
 
+def lex_all(source: str):
+    return tokenizer.tokenize_with_ignored(source)
+
+
 def lex(source: str) -> TokenStream[TokenName]:
     return tokenizer.tokenize(source)
 

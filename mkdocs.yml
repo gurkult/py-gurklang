@@ -18,16 +18,14 @@ plugins:
   - search
 
 markdown_extensions:
+  - gurklang.markdown_highlighting
   - pymdownx.details
-  - pymdownx.highlight:
-      use_pygments: false
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
   - admonition
 
 extra_javascript:
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js
   - javascripts/highlighting.js
   - javascripts/definitions.js
   - javascripts/mathJax.js
