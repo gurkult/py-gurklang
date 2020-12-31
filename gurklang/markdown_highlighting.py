@@ -52,8 +52,13 @@ def make_code_block(source: str):
             )
             section_element.extend(section)
             e.append(section_element)
+
             is_section = False
             section = []
+
+            linebreak = Element("span")
+            linebreak.text = "\n"
+            e.append(linebreak)
         else:
             extra_classes = ""
             if t.name == "NAME" and t.value in {">>>", "..."}:
