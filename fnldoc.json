@@ -2,12 +2,24 @@
     "input_directory": "fnl_doc",
     "start": "Index",
     "toc": {
-        "Index": "index.fnl"
+        "Index": "index.fnl",
+        "Tutorial": {
+            "Boxes": "tutorial/05_boxes.fnl"
+        }
     },
     "output_directory": "site/docs",
     "extensions": [
         ["fnldoc.interpolate", "__extension__"],
         ["fnldoc.md", "__extension__"],
         ["gurklang.fnl_gurklang_plugin", "__extension__"]
+    ],
+
+    "title": "Gurklang",
+    "extra_css": [
+        "code.css"
+    ],
+    "extra_js": [
+        "highlighting.js",
+        "definitions.js"
     ]
 }

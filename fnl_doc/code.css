@@ -1,0 +1,134 @@
+code {
+    white-space: pre;
+    word-break: keep-all;
+}
+
+.tooltip:hover {
+    cursor: pointer;
+}
+
+.docs-tooltip {
+    display: inline-grid;
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #000;
+
+    font-size: 18px;
+    font-family: Roboto, sans-serif;
+
+    padding: 8px;
+    border-radius: 6px;
+
+    position: absolute;
+
+    grid-template-columns: minmax(6em, 3fr) max-content;
+    grid-template-rows: 2em auto;
+    justify-items: stretch;
+    align-items: center;
+    justify-content: center;
+}
+
+.docs-tooltip-title {
+    grid-column: 1;
+    grid-row: 1;
+    font-family: 'Roboto Mono';
+}
+
+
+.docs-tooltip-stack-diagram {
+    grid-column: 2;
+    grid-row: 1;
+    grid-area: "stackdiagram";
+    font-size: 16px;
+    font-family: 'Roboto Mono';
+    font-weight: 600;
+    text-align: center;
+}
+
+.docs-tooltip-explanation {
+    border-top: 2px solid #000;
+    padding: 8px;
+    grid-column: span 2;
+    grid-row: 2;
+    grid-area: "explanation";
+}
+
+
+code[language=gurklang] {
+	display: block;
+    overflow-x: auto;
+    padding: 0.7em;
+    border-radius: 8px;
+    margin-left: 16px;
+    margin-right: 16px;
+	background: rgb(35, 45, 45) !important;
+	color: #ffffff !important;
+    font-size: 16px !important;
+    position: relative;
+}
+
+.gurklang--token--comment {
+    color: #afb6a9;
+}
+
+.gurklang--token--string {
+    color: #b2dd8c;
+}
+
+.gurklang--token--int {
+    color: #86e6d9;
+}
+
+.gurklang--token--atom {
+    color: rgb(255, 113, 91);
+}
+
+.gurklang--token--name {
+    color: #f3bb53;
+}
+
+.gurklang--meta {
+    color: #7299b9;
+}
+
+.gurklang--deletion {
+    color: #ff0800;
+}
+
+.gurklang--token--left_brace,
+.gurklang--token--right_brace,
+.gurklang--token--left_paren,
+.gurklang--token--right_paren {
+    color: #fff;
+}
+
+.gurklang--section--begin {
+    color: #5a5a5a;
+}
+
+.gurklang--section--end {
+    color: #5a5a5a;
+}
+
+.gurklang--section {
+    display: inline-block;
+    width: 100%;
+    padding: 0.25em;
+    border-radius: 4px;
+    border-left-width: 4px;
+    border-left-color: rgb(255, 255, 255, 0.5);
+    border-left-style: solid;
+    background: rgb(0, 0, 0, 0.3);
+    transition: 0.25s;
+}
+
+.gurklang--section--good {
+    border-left-color: rgba(91, 250, 63, 0.514);
+}
+
+.gurklang--section--bad {
+    border-left-color: rgba(255, 21, 21, 0.623);
+}
+
+div#content {
+    position: relative;
+}
