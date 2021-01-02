@@ -115,7 +115,7 @@ const waitForCondition = (conditionFn, stepMs=100) =>
 // wait until the definitions load, then attach them
 window.fnl.onPageSwitch.push(async (title) => {
     console.log(`Gurklang: highlighting page ${title}`);
-    await waitForCondition(() => window.nameDefinition !== undefined);
+    await waitForCondition(() => window.nameDefinitions !== undefined);
     document.querySelectorAll('.gurklang--token--name').forEach(attachTooltipToNode);
     document.querySelectorAll('.tooltiptext').forEach(displayTooltipOnTopOfEverything)
 });
