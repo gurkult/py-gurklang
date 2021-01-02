@@ -1,0 +1,76 @@
+:root {
+    --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='10.91' fill='none' stroke='%23fff' stroke-width='2.17' stroke-linecap='round' stroke-linejoin='round' paint-order='stroke markers fill'/%3E%3Cpath d='M12 10.02v8.69M12 5.58v-.02' fill='none' stroke='%23fff' stroke-width='3.3' stroke-linecap='round'/%3E%3C/svg%3E");
+    --icon-answer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='-12' r='10.91' transform='scale(1 -1)' fill='none' stroke='%23fff' stroke-width='2.17' stroke-linecap='round' stroke-linejoin='round' paint-order='stroke markers fill'/%3E%3Cpath d='M12 13.98V5.3M12 18.42v.02' fill='none' stroke='%23fff' stroke-width='3.3' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.admonition {
+    --admonition-hue: var(--primary-hue);
+
+    --admonition-primary: hsl(var(--admonition-hue), 50%, 70%);
+    --admonition-dark: hsl(var(--admonition-hue), 50%, 61%);
+    --admonition-darkest: hsl(var(--admonition-hue), 50%, 25%);
+
+    display: grid;
+    grid-template-areas:
+        "icon title"
+        "body body";
+    grid-template-columns: 2em auto;
+    grid-template-rows: max-content max-content;
+
+    justify-items: stretch;
+    align-items: stretch;
+
+    /* border: 2px solid var(--admonition-darkest); */
+    /* offset-x | offset-y | blur-radius | spread-radius | color */
+    box-shadow: 0 2px 0 2px hsla(var(--admonition-hue), 50%, 32%, 15%);
+
+    background: var(--admonition-dark);
+    --admonition-icon: transparent;
+
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.admonition-title {
+    font-family: var(--title-font);
+    color: var(--light-text-color);
+    font-size: 18pt;
+    font-weight: 600;
+    grid-area: title;
+    background: var(--admonition-primary);
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 12px;
+}
+
+.admonition-icon {
+    grid-area: icon;
+    background: no-repeat center var(--admonition-icon);
+}
+
+.admonition-body {
+    grid-area: body;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: calc(var(--font-size-text) * 0.8);
+    background: var(--bg-color);
+}
+
+.adm-info {
+    --admonition-hue: 214;
+    --admonition-icon: var(--icon-info);
+}
+
+.adm-answer {
+    --admonition-hue: 256;
+    --admonition-icon: var(--icon-answer);
+}
+.adm-answer .admonition-body {
+    filter: blur(3.6px) saturate(30%);
+    transition: 0.25s;
+}
+.adm-answer .admonition-body:hover {
+    filter: blur(0);
+}

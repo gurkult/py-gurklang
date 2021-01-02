@@ -1,0 +1,280 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat&family=Libre+Baskerville&display=swap');
+
+
+:root {
+    --font-size-header: 26pt;
+    --font-size-subheader: 23pt;
+    --font-size-subsubheader: 20pt;
+    --font-size-subsubsubheader: 18pt;
+    --font-size-text: 14pt;
+
+    --paragraph-line-size: 1.5;
+
+    --font-size-toc-item: 16pt;
+
+    --title-font: 'Montserrat';
+    --text-font: 'Libre Baskerville';
+    --toc-font: 'Montserrat';
+
+    --light-text-color: #fff;
+    --light-link-color: rgb(175, 164, 236);
+    --light-link-color-active: rgb(236, 184, 164);
+
+    --dark-text-color: rgb(47, 47, 47);
+    --dark-link-color: rgb(79, 52, 226);
+    --dark-link-color-active: rgb(226, 87, 52);
+
+    --primary-hue: 150;
+    --primary-saturation: 34%;
+    --primary-luminosity: 50%;
+    --primary-color: hsl(
+        var(--primary-hue),
+        var(--primary-saturation),
+        var(--primary-luminosity)
+    );
+    --primary-color-dark: hsl(
+        var(--primary-hue),
+        var(--primary-saturation),
+        calc(var(--primary-luminosity) * 0.9)
+    );
+    --primary-color-darkest: hsl(
+        var(--primary-hue),
+        var(--primary-saturation),
+        calc(var(--primary-luminosity) * 0.6)
+    );
+
+    --shade-color: hsl(
+        var(--primary-hue),
+        calc(var(--primary-saturation) * 0.3),
+        calc(100% * 0.8 + var(--primary-luminosity) * 0.2)
+    );
+
+    --bg-color: #fff;
+}
+
+*{
+    box-sizing: border-box;
+}
+
+
+body {
+    font-family: var(--text-font);
+    line-height: var(--paragraph-line-size);
+    background: var(--shade-color);
+}
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    font-size: var(--font-size-text);
+    padding: 0;
+    margin: 0;
+}
+
+main {
+    display: grid;
+
+    grid-template-areas:
+        "header title title"
+        "left middle .";
+    grid-template-columns: 8fr 13fr 5fr;
+    grid-template-rows: 3.3em auto;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+#title {
+    color: var(--light-text-color);
+    font-family: var(--title-font);
+    grid-area: title;
+    background: var(--primary-color-dark);
+    position: relative
+}
+
+#title h2 {
+    font-size: var(--font-size-header);
+    margin: 0;
+    margin-left: 14px;
+
+    position: absolute;
+    bottom: 6px;
+}
+
+#header {
+    color: var(--light-text-color);
+    font-family: var(--title-font);
+    grid-area: header;
+    background: var(--primary-color);
+    position: relative
+}
+
+#header h1 {
+    font-size: var(--font-size-header);
+
+    margin: 0;
+    margin-right: 14px;
+
+    position: absolute;
+    bottom: 6px;
+    right: 0;
+}
+
+li.fnldoc--toc--point {
+    margin: 0;
+    margin: 12px;
+}
+
+li.fnldoc--toc--point a {
+    color: var(--primary-color-darkest) !important;
+    transition: 0.1s;
+}
+
+.fnldoc--toc--branch-label, .fnldoc--toc--node button {
+    cursor: pointer;
+}
+
+li.fnldoc--toc--point a:hover {
+    color: var(--primary-color-dark) !important;
+}
+
+li.fnldoc--toc--point a:active {
+    color: var(--primary-color) !important;
+}
+
+#toc {
+    background: var(--bg-color);
+    grid-area: left;
+    font-size: var(--font-size-toc-item) !important;
+    font-family: var(--toc-font);
+    line-height: 1.25;
+    justify-self: end;
+    min-width: 15em;
+}
+
+#toc ul {
+    list-style-type: none;
+    list-style-position: outside;
+}
+
+ul ul {
+    margin-left: -16px;
+}
+
+#content {
+    background: var(--bg-color);
+    grid-area: middle;
+    padding-left: 36px;
+    padding-right: 64px;
+    padding-top: 12px;
+    overflow-y: scroll;
+    align-self: stretch;
+    border-left: 1px solid var(--shade-color);
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    margin: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-dark);
+}
+
+
+#content h1 {
+    font-size: var(--font-size-subheader);
+    font-family: var(--title-font);
+}
+
+#content h2 {
+    font-size: var(--font-size-subsubheader);
+    font-family: var(--title-font);
+}
+
+#content h3 {
+    font-size: var(--font-size-subsubsubheader);
+    font-family: var(--title-font);
+}
+
+
+@media screen and (max-width: 1200px) {
+
+    #content {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    main {
+        grid-template-areas:
+            "header"
+            "left"
+            "title"
+            "middle";
+        grid-template-columns: 100%;
+        grid-template-rows: 4em max-content 4em max-content;
+    }
+
+    #header h1 {
+        left: 12px;
+    }
+
+    #toc {
+        justify-self: stretch;
+    }
+
+    #content {
+        overflow-y: visible;
+    }
+
+}
+
+
+.fnldoc--toc--toggle {
+    background: var(--primary-color-dark);
+
+    border: none;
+
+    border-radius: 0px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+
+    width: 1.2em;
+    height: 1.2em;
+    text-align: center;
+    outline: none !important;
+    transition: 0.15s;
+}
+
+.fnldoc--toc--toggle:hover {
+    background: var(--primary-color-darkest);
+}
+
+.fnldoc--toc--toggle.--open {
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 16px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 16px;
+}
+
+
+.fnldoc--toc--nested {
+    display: box;
+}
+
+.fnldoc--toc--nested.--hidden {
+    display: none;
+}

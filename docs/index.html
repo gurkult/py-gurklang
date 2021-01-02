@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gurklang</title>
+    <link rel="stylesheet" href="style.css"/>
+    <script src="data.js"></script>
+    <script src="fnldoc.js"></script>
+    <script src="highlighting.js"></script>
+<script src="definitions.js"></script>
+<script src="mathjax.js"></script>
+<link rel="stylesheet" href="code.css"/>
+<link rel="stylesheet" href="admonition.css"/>
+
+</head>
+<body>
+    <main>
+        <div id="header">
+            <h1>Gurklang</h1>
+        </div>
+        <div id="toc"></div>
+        <div id="content"></div>
+        <div id="title">
+            <h2></h2>
+        </div>
+    </main>
+<script>
+    window.loadFnlDoc({
+        toc: document.querySelector("#toc"),
+        main: document.querySelector("#content"),
+        title: document.querySelector("#title h2"),
+    });
+</script>
+</body>
+</html>
