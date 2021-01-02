@@ -1,9 +1,11 @@
 import pprint
 
 from typing import Sequence, TypeVar, Tuple
+from .. import parser
+from .. import ast_parser
 from ..vm_utils import render_value_as_source
 from ..builtin_utils import Module, Fail
-from ..types import Atom, Box, Instruction, State, Value, Stack, Scope, Int, Vec
+from ..types import Atom, Box, Instruction, State, Str, Value, Stack, Scope, Int, Vec
 
 from collections import deque
 
@@ -11,6 +13,60 @@ from collections import deque
 module = Module("inspect")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
+
+
+@module.register_simple()
+def tokenize(stack: T[V, S], scope: Scope, fail: Fail):
+    (source_code, rest) = stack
+    if source_code.tag != "str":
+        fail(f"{render_value_as_source(source_code)} is not a string")
+    tokens = list(parser.lex_all(source_code.value))
+    rv = Vec(())
+    for token in reversed(tokens):
+        begin, end = token.span
+        tv = Vec((
+            Atom(token.name.lower().replace("_", "-")),
+            Str(token.value),
+            Vec((Int(begin),
+            Int(end)))
+        ))
+        rv = Vec((tv, rv))
+    return (rv, rest), scope
+
+
+def _ast_to_value(ast: ast_parser.ASTNode) -> Value:
+    if isinstance(ast, ast_parser.IntLiteral):
+        return Vec((Atom("int-literal"), Int(ast.value)))
+    elif isinstance(ast, ast_parser.StrLiteral):
+        return Vec((Atom("str-literal"), Str(ast.value)))
+    elif isinstance(ast, ast_parser.AtomLiteral):
+        return Vec((Atom("atom-literal"), Str(ast.value)))
+    elif isinstance(ast, ast_parser.NameCall):
+        return Vec((Atom("name"), Str(ast.value)))
+    elif isinstance(ast, ast_parser.VecLiteral):
+        rv = Vec(())
+        for node in reversed(ast.nodes):
+            rv = Vec((_ast_to_value(node), rv))
+        return Vec((Atom("vec-literal"), rv))
+    elif isinstance(ast, ast_parser.CodeLiteral):
+        rv = Vec(())
+        for node in reversed(ast.nodes):
+            rv = Vec((_ast_to_value(node), rv))
+        return Vec((Atom("code-literal"), rv))
+    else:
+        raise RuntimeError(ast)
+
+
+@module.register_simple()
+def build_ast(stack: T[V, S], scope: Scope, fail: Fail):
+    (source_code, rest) = stack
+    if source_code.tag != "str":
+        fail(f"{render_value_as_source(source_code)} is not a string")
+    try:
+        ast = ast_parser.parse_as_ast(source_code.value)
+        return (_ast_to_value(ast), rest), scope
+    except:
+        return (Atom(":syntax-error"), rest), scope
 
 
 @module.register_simple()
