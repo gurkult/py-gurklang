@@ -4,6 +4,7 @@
     "toc": {
         "Index": "index.fnl",
         "Tutorial": {
+            "Functions": "tutorial/01_functions.fnl",
             "Boxes": "tutorial/05_boxes.fnl"
         }
     },
@@ -16,7 +17,8 @@
 
     "title": "Gurklang",
     "extra_css": [
-        "code.css"
+        "code.css",
+        "admonition.css"
     ],
     "extra_js": [
         "highlighting.js",

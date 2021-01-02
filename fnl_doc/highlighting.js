@@ -93,17 +93,36 @@ const displayTooltipOnTopOfEverything = node => {
 };
 
 
+
+/**
+ * @param conditionFn { () => boolean }
+ * @param stepMs { number= }
+ */
+const waitForCondition = (conditionFn, stepMs=100) =>
+    new Promise((resolve, reject) => {
+        const intervalId = setInterval(
+            () => {
+                if (conditionFn()){
+                    clearInterval(intervalId);
+                    resolve();
+                }
+            },
+            stepMs
+        );
+    });
+
+
 // wait until the definitions load, then attach them
-window.fnl.onPageSwitch.push(title => {
-    console.log(`Highlighting page ${title}`);
-    const intervalId = setInterval(
-        () => {
-            if (!window.nameDefinitions)
-                return;
-            clearInterval(intervalId);
-            document.querySelectorAll('.gurklang--token--name').forEach(attachTooltipToNode);
-            document.querySelectorAll('.tooltiptext').forEach(displayTooltipOnTopOfEverything)
-        },
-        100
-    )
+window.fnl.onPageSwitch.push(async (title) => {
+    console.log(`Gurklang: highlighting page ${title}`);
+    await waitForCondition(() => window.nameDefinition !== undefined);
+    document.querySelectorAll('.gurklang--token--name').forEach(attachTooltipToNode);
+    document.querySelectorAll('.tooltiptext').forEach(displayTooltipOnTopOfEverything)
+});
+
+
+window.fnl.onPageSwitch.push(async (title) => {
+    console.log(`MathJax: typesetting ${title}`);
+    await waitForCondition(() => window.MathJax.typeset !== undefined);
+    window.MathJax.typeset();
 });

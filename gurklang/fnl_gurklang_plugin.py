@@ -4,6 +4,7 @@ from textwrap import dedent
 from typing import Dict
 from . import parser, ast_parser, ast_tools
 from xml.etree.ElementTree import Element, tostring as xml_to_string
+from context_manager_patma import match
 import re
 
 
@@ -117,3 +118,28 @@ def math_display():
         return fnl.e.BlockTag("div", 'class="math-display"', (fnl.e.BlockRaw(text),))
     yield ("(λ str . block)", _math_display)
 
+
+@fnl.definitions.fn(__extension__, "adm")
+def admonition():
+    def _admonition(qname: fnl.e.Quoted, *blocks: fnl.e.Entity):
+
+        with match(qname) as case:
+            with case("Quoted(Name(name))") as [m]:
+                name: str = m.name
+
+        return fnl.e.BlockTag(
+            "div",
+            f'class="admonition adm-{name.lower()}"',
+            (
+                fnl.e.BlockTag(
+                    "div", 'class="admonition-icon"', ()
+                ),
+                fnl.e.BlockTag(
+                    "div", 'class="admonition-title"', (fnl.e.String(name.title()),)
+                ),
+                fnl.e.BlockTag(
+                    "div", 'class="admonition-body"', blocks
+                ),
+            )
+        )
+    yield ("(λ &[name] ...any . block)", _admonition)

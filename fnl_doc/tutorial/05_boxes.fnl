@@ -1,6 +1,6 @@
 ($
 
-((h 1) "Mutable variables with " (tt "boxes"))
+((h 1) "Mutable variables with boxes")
 (p
   "While immutable data is generally easier to understand and debug, sometimes
   you do want mutable state either for convenience or for performance.")
