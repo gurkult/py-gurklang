@@ -1,4 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Overpass+Mono&display=swap');
+
+
+:root {
+    --monospace-font: 'Overpass Mono', monospace;
+}
+
 code {
+    font-family: var(--monospace-font);
     white-space: pre;
     word-break: keep-all;
 }
@@ -30,7 +38,7 @@ code {
 .docs-tooltip-title {
     grid-column: 1;
     grid-row: 1;
-    font-family: 'Roboto Mono';
+    font-family: var(--monospace-font);
 }
 
 
@@ -39,7 +47,7 @@ code {
     grid-row: 1;
     grid-area: "stackdiagram";
     font-size: 16px;
-    font-family: 'Roboto Mono';
+    font-family: var(--monospace-font);
     font-weight: 600;
     text-align: center;
 }

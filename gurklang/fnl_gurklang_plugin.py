@@ -23,12 +23,13 @@ def get_code_metadata(source: str) -> Dict[str, str]:
 
 
 def make_code_block(source: str):
-    source = dedent(source)
+    source = dedent(source.strip())
 
     # Replace an error (which might highlight incorrectly) with a section comment
     def replacer(m: re.Match):
         return "\n#((bad\n" + "\n".join("# " + line for line in m[0].splitlines())  + "\n#))\n"
-    source = re.sub(r"(?:KeyError|Failure)(.|\n)*Type traceback\? for complete Python traceback", replacer, source)
+    source = re.sub(r"(?:ValueError|RuntimeError|KeyError|Failure)(.|\n)*"
+                    r"Type traceback\? for complete Python traceback", replacer, source)
 
     e1 = Element("pre")
     e = Element("code", {

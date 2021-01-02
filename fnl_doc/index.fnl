@@ -131,10 +131,6 @@ type soundness is not statically determined.")
     Failure in function +
     Reason: Str(value='a') cannot be added with Str(value='a')
     > Stack:  [1 2 3 4 a a]
-    Failure in function +
-    Reason: uncaught exception RuntimeError: + Str(value='a') cannot be added with Str(value='a')
-    > Stack:  [1 2 3 4 a a]
-    RuntimeError: + uncaught exception RuntimeError: + Str(value='a') cannot be added with Str(value='a')
     Type traceback? for complete Python traceback
     """))
 
@@ -180,9 +176,11 @@ type soundness is not statically determined.")
       >>> 3 :e  def
       >>> 2 :e  def
       Failure in function def
-      Reason: uncaught exception RuntimeError: Trying to reassign e
+      Reason: uncaught exception RuntimeError:
+      Trying to reassign e
       > Stack:  [9 2 :e]
-      RuntimeError: def uncaught exception RuntimeError: Trying to reassign e
+      RuntimeError: def uncaught exception RuntimeError:
+      Trying to reassign e
       Type traceback? for complete Python traceback
       """)
       "There is a mechanism for managing mutable variables, but you'll rarely need it.")
@@ -224,10 +222,6 @@ type soundness is not statically determined.")
       Failure in function =
       Reason: cannot compare type int with type str
       > Stack:  [9 1 foo]
-      Failure in function =
-      Reason: uncaught exception RuntimeError: = cannot compare type int with type str
-      > Stack:  [9 1 foo]
-      RuntimeError: = uncaught exception RuntimeError: = cannot compare type int with type str
       Type traceback? for complete Python traceback
       """))
 
