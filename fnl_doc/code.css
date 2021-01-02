@@ -63,8 +63,8 @@ code {
 code:not([language]) {
     display: inline-block;
     word-wrap: none;
-    background: rgb(35, 45, 45);
-    color: #ffffff;
+    background: var(--shade-color);
+    color: var(--dark-text-color);
     padding-left: 0.25em;
     padding-right: 0.25em;
     border-radius: 3px;
