@@ -1,7 +1,7 @@
 #!/bin/bash
 # https://stackoverflow.com/questions/26224526/how-to-push-a-git-ignored-folder-to-a-subtree-branch
 
-env/bin/python -m mkdocs build -d site/docs
+env/bin/python -m fnldoc build fnldoc.json
 cp site/CNAME site/docs/CNAME
 
 if [[ "$(git status)" == *"nothing to commit, working tree clean"* ]]
