@@ -67,3 +67,10 @@
     --admonition-hue: 256;
     --admonition-icon: var(--icon-answer);
 }
+.adm-answer .admonition-body {
+    filter: blur(3px) saturate(30%);
+    transition: 0.25s;
+}
+.adm-answer .admonition-body:hover {
+    filter: blur(0);
+}
