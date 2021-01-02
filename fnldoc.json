@@ -1,0 +1,13 @@
+{
+    "input_directory": "fnl_doc",
+    "start": "Index",
+    "toc": {
+        "Index": "index.fnl"
+    },
+    "output_directory": "site/docs",
+    "extensions": [
+        ["fnldoc.interpolate", "__extension__"],
+        ["fnldoc.md", "__extension__"],
+        ["gurklang.fnl_gurklang_plugin", "__extension__"]
+    ]
+}
