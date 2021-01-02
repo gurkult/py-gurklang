@@ -100,3 +100,20 @@ def concat_block():
     def from_mixed(*args):
         return fnl.e.BlockConcat(args)
     yield ("(λ ...any . block)", from_mixed)
+
+
+@fnl.definitions.fn(__extension__, "math")
+def math_inline():
+    def _math_inline(string: fnl.e.String):
+        text = "$" + string.value + "$"
+        return fnl.e.InlineTag("span", 'class="math-inline"', (fnl.e.InlineRaw(text),))
+    yield ("(λ str . inline)", _math_inline)
+
+
+@fnl.definitions.fn(__extension__, "math-display")
+def math_display():
+    def _math_display(string: fnl.e.String):
+        text = "!!" + string.value + "!!"
+        return fnl.e.BlockTag("div", 'class="math-display"', (fnl.e.BlockRaw(text),))
+    yield ("(λ str . block)", _math_display)
+
