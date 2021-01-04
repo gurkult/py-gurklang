@@ -59,7 +59,6 @@ def test_generators(capsys):
 def test_higher_order_functions(capsys):
     run(R"""
     :math ( + ) import
-    :inspect ( code-dump ) import
 
     { :f def :x def { x f ! } } :my-close jar
 

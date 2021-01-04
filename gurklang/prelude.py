@@ -298,8 +298,9 @@ def close(stack: T[V, T[V, S]], fail: Fail):
     (function, (value, rest)) = stack
 
     if function.tag == "code":
+        function.introduce()
         rv = Code([Put(value), *function.instructions], closure=function.closure, name=function.name,
-                  flags=function.flags)
+                  flags=function.flags, finalizer=function.finalizer, introducer=function.introducer)
     elif function.tag == "native":
         rv = NativeFunction(lambda state: function.fn(state.push(value)), function.name)  # type: ignore
     else:
@@ -424,11 +425,14 @@ def __match_case(stack: Stack, fail: Fail):
         insns = list(action.instructions)
         for k, v in new_variables.items():
             insns[:0] = [Put(v), CallByValue(), Put(Atom(k)), Put(def_), CallByValue()]
+        action.introduce()
         action = Code(
             instructions=insns,
             closure=action.closure,
             flags=action.flags,
-            source_code=action.source_code
+            source_code=action.source_code,
+            finalizer=action.finalizer,
+            introducer=action.introducer
         )
         return (action, new_stack)
     return stack

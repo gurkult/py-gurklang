@@ -1,11 +1,12 @@
 from __future__ import annotations
 from enum import  IntFlag
+import weakref
 from immutables import Map
 try:
     from typing_extensions import Literal
 except ImportError:
     from typing import Literal
-from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
+from typing import Any, Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass, field, replace as dataclass_replace
 
 
@@ -175,7 +176,7 @@ class State:
 
     def get_by_name(self, scope_id: int, name: str) -> "Value":
         if scope_id not in self.scopes:
-            raise KeyError(f"No scope #{scope_id}")
+            raise KeyError(f"No scope #{scope_id} when trying to get {name}, scopestack: {self.scope_stack}")
         return self.scopes[scope_id].get(name, self)
 
     def look_up_name_in_current_scope(self, name: str) -> "Value":
@@ -207,6 +208,12 @@ class State:
 
     def get_scope(self, scope_id: int) -> Optional[Scope]:
         return self.scopes[scope_id]
+
+    def kill_scope(self, scope_id: int) -> "State":
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.delete(scope_id)
+        )
 
 
 @dataclass(frozen=True)
@@ -362,7 +369,21 @@ class Code:
     flags: CodeFlags = CodeFlags.EMPTY
     name: str = "λ"
     source_code: Optional[str] = None
+    introducer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
+    finalizer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
     tag: ClassVar[Literal["code"]] = "code"
+
+    def introduce(self):
+        if self.introducer is not None and self.closure is not None:
+            introducer = self.introducer()
+            if introducer is not None:
+                introducer(self.closure)
+
+    def __del__(self):
+        if self.finalizer is not None and self.closure is not None:
+            finalizer = self.finalizer()
+            if finalizer is not None:
+                finalizer(self.closure)
 
     def with_name(self, name: str) -> Code:
         return dataclass_replace(self, name=name)
