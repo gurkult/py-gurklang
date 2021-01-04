@@ -1,4 +1,4 @@
-from typing import List, Optional, TypeVar, Tuple, Deque
+from typing import List, Optional, TYPE_CHECKING, TypeVar, Tuple, Deque
 
 from immutables import Map
 from ..vm_utils import render_value_as_source, stringify_value
@@ -14,8 +14,10 @@ module = BuiltinModule("threading")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
-
-ThreadQ = Queue[Tuple[int, Stack]]
+if TYPE_CHECKING:
+    ThreadQ = Queue[Tuple[int, Stack]]
+else:
+    ThreadQ = Queue
 
 
 def _run_function(
