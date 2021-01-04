@@ -2,11 +2,12 @@ from .trie import Trie
 
 
 DEFAULT_PRELUDE = R"""
-:repl-utils :all          import
-:inspect    :prefix       import
-:coro       :prefix       import
-:math       :all          import
-:boxes      ( box <- -> ) import
+:boxes      ( <- )     import
+:repl-utils :all     import
+:inspect    :prefix  import
+:coro       :prefix  import
+:math       :all     import
+:boxes      :all     import
 
 
 "" box :repl[ml-prompt]     def

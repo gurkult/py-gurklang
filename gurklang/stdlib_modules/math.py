@@ -11,81 +11,81 @@ Z = TypeVar("Z", bound=Stack)
 
 
 @module.register_simple("<")
-def less_than(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def less_than(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return (Atom.bool(x.value < y.value), rest), scope
+    return (Atom.bool(x.value < y.value), rest)
 
 
 @module.register_simple(">")
-def greater_than(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def greater_than(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return (Atom.bool(x.value > y.value), rest), scope
+    return (Atom.bool(x.value > y.value), rest)
 
 
 @module.register_simple(">=")
-def greater_than_or_equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def greater_than_or_equals(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return (Atom.bool(x.value >= y.value), rest), scope
+    return (Atom.bool(x.value >= y.value), rest)
 module.add("≥", greater_than_or_equals)
 
 
 @module.register_simple("<=")
-def less_than_or_equals(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def less_than_or_equals(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be compared with {y}")
-    return (Atom.bool(x.value <= y.value), rest), scope
+    return (Atom.bool(x.value <= y.value), rest)
 module.add("≤", less_than_or_equals)
 
 
 @module.register_simple("+")
-def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def add(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be added with {y}")
-    return (Int(x.value + y.value), rest), scope
+    return (Int(x.value + y.value), rest)
 
 
 @module.register_simple("-")
-def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def add(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{y} cannot be subtracted from {x}")
-    return (Int(x.value - y.value), rest), scope
+    return (Int(x.value - y.value), rest)
 
 
 @module.register_simple("*")
-def add(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def add(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be multiplied by {y}")
-    return (Int(x.value * y.value), rest), scope
+    return (Int(x.value * y.value), rest)
 
 
 @module.register_simple("/")
-def floor_div(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def floor_div(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"Cannot perform floor division: {x} and {y} are not both ints")
     elif y.value == 0:
         fail(f"Division by zero: {x.value} 0 /")
-    return (Int(x.value // y.value), rest), scope
+    return (Int(x.value // y.value), rest)
 
 
 @module.register_simple("%")
-def modulo(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def modulo(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"Cannot get modulo: {x} and {y} are not both ints")
     elif y.value == 0:
         fail(f"Division by zero: {x.value} 0 %")
-    return (Int(x.value % y.value), rest), scope
+    return (Int(x.value % y.value), rest)
 
 
 def _simplify_fraction(numerator: int, denominator: int):
@@ -94,7 +94,7 @@ def _simplify_fraction(numerator: int, denominator: int):
 
 
 @module.register_simple("%make")
-def make_fraction(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def make_fraction(stack: T[V, T[V, S]], fail: Fail):
     (y, (x, rest)) = stack
     if x.tag != "int" or y.tag != "int":
         fail(f"{x} cannot be multiplied by {y}")
@@ -104,7 +104,7 @@ def make_fraction(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
     numerator, denominator = _simplify_fraction(x.value, y.value)
 
-    return (Vec([Int(numerator), Int(denominator)]), rest), scope
+    return (Vec([Int(numerator), Int(denominator)]), rest)
 
 
 def _read_fraction(stack: T[V, Z], fail: Fail) -> Tuple[Tuple[int, int], Z]:
@@ -127,37 +127,37 @@ def _read_fraction(stack: T[V, Z], fail: Fail) -> Tuple[Tuple[int, int], Z]:
 
 
 @module.register_simple("%+")
-def add_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def add_fractions(stack: T[V, T[V, S]], fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
 
     numerator, denominator = _simplify_fraction(xa*yb + xb*ya, xb*yb)
 
-    return (Vec([Int(numerator), Int(denominator)]), stack__), scope
+    return (Vec([Int(numerator), Int(denominator)]), stack__)
 
 
 @module.register_simple("%-")
-def sub_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def sub_fractions(stack: T[V, T[V, S]], fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
 
     numerator, denominator = _simplify_fraction(xa*yb - xb*ya, xb*yb)
 
-    return (Vec([Int(numerator), Int(denominator)]), stack__), scope
+    return (Vec([Int(numerator), Int(denominator)]), stack__)
 
 
 @module.register_simple("%*")
-def mul_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def mul_fractions(stack: T[V, T[V, S]], fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
 
     numerator, denominator = _simplify_fraction(xa*ya, xb*yb)
 
-    return (Vec([Int(numerator), Int(denominator)]), stack__), scope
+    return (Vec([Int(numerator), Int(denominator)]), stack__)
 
 
 @module.register_simple("%/")
-def div_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def div_fractions(stack: T[V, T[V, S]], fail: Fail):
     (ya, yb), stack_ = _read_fraction(stack, fail)
     (xa, xb), stack__ = _read_fraction(stack_, fail)
 
@@ -166,4 +166,4 @@ def div_fractions(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
 
     numerator, denominator = _simplify_fraction(xa*yb, xb*ya)
 
-    return (Vec([Int(numerator), Int(denominator)]), stack__), scope
+    return (Vec([Int(numerator), Int(denominator)]), stack__)

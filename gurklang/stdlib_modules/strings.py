@@ -10,7 +10,7 @@ Z = TypeVar("Z", bound=Stack)
 
 
 @make_simple()
-def __foreach_str_init(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def __foreach_str_init(stack: T[V, T[V, S]], fail: Fail):
     (fn, (s, rest)) = stack
     if s.tag != "str":
         fail(f"{render_value_as_source(s)} is not a string")
@@ -18,7 +18,7 @@ def __foreach_str_init(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
     if fn.tag != "code" and fn.tag != "native":
         fail(f"{render_value_as_source(fn)} is not a function")
 
-    return (__foreach_str_step, (Int(0), (fn, (s, rest)))), scope
+    return (__foreach_str_step, (Int(0), (fn, (s, rest))))
 
 @make_function()
 def __foreach_str_step(state: State, fail: Fail) -> State:

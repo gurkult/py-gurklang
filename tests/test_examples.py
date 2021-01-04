@@ -13,8 +13,8 @@ def run(code):
 def irun(*instructions: Instruction):
     start_time = time.time()
     def on_timeout_bail(*_):
-        if time.time() >= start_time + 1:
-            raise TimeoutError
+        if time.time() >= start_time + 2:
+            raise TimeoutError(time.time() - start_time)
     return vm.run_with_middleware(instructions, on_timeout_bail).stack
 
 

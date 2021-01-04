@@ -120,13 +120,13 @@ def rollback_pop(state: State, fail: Fail):
 
 # not to create a circular dependency with prelude
 @make_simple("swap")
-def __swap(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: Fail):
+def __swap(stack: Tuple[Value, Tuple[Value, Stack]], fail: Fail):
     (y, (x, rest)) = stack
-    return (x, (y, rest)), scope
+    return (x, (y, rest))
 
 
 @make_simple("<=-impl")
-def __change_box(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: Fail):
+def __change_box(stack: Tuple[Value, Tuple[Value, Stack]], fail: Fail):
     """
     {
       :fn def :a-box def
@@ -152,7 +152,7 @@ def __change_box(stack: Tuple[Value, Tuple[Value, Stack]], scope: Scope, fail: F
         Put(box), Put(commit), CallByValue(),
         name="<=-impl!",
     )
-    return (code, rest), scope
+    return (code, rest)
 
 
 module.add("<=", raw_function(Put(__change_box), CallByValue(), CallByValue(), name="<="))

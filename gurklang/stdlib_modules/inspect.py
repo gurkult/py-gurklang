@@ -79,12 +79,12 @@ def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
     return rest, scope
 
 
-@module.register_simple()
-def dis(stack: T[V, S], scope: Scope, fail: Fail):
-    (head, rest) = stack
+@module.register()
+def dis(state: State, fail: Fail):
+    (head, rest) = state.infinite_stack()
 
     if head.tag == "atom":
-        head = scope[head.value]
+        head = state.look_up_name_in_current_scope(head.value)
 
     if head.tag != "code":
         fail(f"{head} is not valid code or atom")
@@ -121,7 +121,7 @@ def dis(stack: T[V, S], scope: Scope, fail: Fail):
                 print(render_value_as_source(instruction.as_vec()))
         print()
 
-    return rest, scope
+    return state.with_stack(rest)
 
 
 

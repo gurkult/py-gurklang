@@ -4,7 +4,8 @@ Read Eval Print Loop
 The essential interactive programming tool!
 """
 from __future__ import annotations
-from gurklang.vm_utils import render_value_as_source, stringify_stack
+from .vm_utils import render_value_as_source, stringify_stack
+from . import vm
 from .repl_constants import DEFAULT_PRELUDE, BACKSLASH_MAPPING
 import sys
 import traceback
@@ -326,8 +327,7 @@ class Repl:
 
     def __init__(self, prelude: str = DEFAULT_PRELUDE, program: str = ""):
         state = run([])
-        local_scope = make_scope(state.scope)
-        state = state.with_scope(local_scope)
+        state = state.make_scope(state.current_scope_id, vm.generate_scope_id())
         state = call(state, code(program))
         self.state = call(state, code(prelude))
         self.last_traceback = None
@@ -419,7 +419,8 @@ class Repl:
     # StdoutSniper integration:
 
     def __del__(self):
-        sys.stdout = self.sniper.real_stdout
+        if hasattr(self, "sniper"):
+            sys.stdout = self.sniper.real_stdout
 
     def _before_printing_occurs(self, writer: TextIO):
         s = self.config.string_before_output

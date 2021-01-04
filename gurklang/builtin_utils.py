@@ -11,7 +11,7 @@ from gurklang.types import Code, CodeFlags, Instruction, Scope, Stack, State, Va
 Z = TypeVar("Z", bound=Stack, contravariant=True)
 
 
-def _fail(name: str, reason: str, stack: Stack, scope: Scope):
+def _fail(name: str, reason: str, stack: Stack):
     print("Failure in function", name)
     print("Reason:", reason)
     print("> Stack: ", "[" + " ".join(map(vm_utils.stringify_value, vm_utils.repr_stack(stack))) + "]")
@@ -33,7 +33,7 @@ class Module:
         self.members[member_name] = value
 
     def register_simple(self, name: Optional[str] = None):
-        def inner(fn: Callable[[Z, Scope, Fail], Tuple[Stack, Scope]]) -> NativeFunction:
+        def inner(fn: Callable[[Z, Fail], Stack]) -> NativeFunction:
             native_fn = make_simple(name)(fn)  # type: ignore
             self.add(native_fn.name, native_fn)
             return native_fn
@@ -47,14 +47,17 @@ class Module:
         return inner
 
     def make_scope(self, id: int, parent: Optional[Scope]=None):
-        return Scope(parent=parent, id=id, values=Map(self.members))
+        if parent is None:
+            return Scope(parent=None, id=id, values=Map(self.members))
+        else:
+            return Scope(parent=parent.id, id=id, values=Map(self.members))
 
 
 def make_simple(name: Optional[str] = None):
-    def inner(fn: Callable[[Z, Scope, Fail], Tuple[Stack, Scope]]) -> NativeFunction:
+    def inner(fn: Callable[[Z, Fail], Stack]) -> NativeFunction:
         def new_fn(state: State, fail: Fail):
-            stack, scope = fn(state.stack, state.scope, fail)
-            return state.with_stack(stack).with_scope(scope)
+            stack = fn(state.stack, fail)
+            return state.with_stack(stack)
         new_fn.__name__ = fn.__name__
         return make_function(name)(new_fn)
     return inner
@@ -64,8 +67,7 @@ def make_function(name: Optional[str] = None):
     def inner(fn: Callable[[State, Fail], State]) -> NativeFunction:
         fn_name = name or fn.__name__.replace("_", "-")
         def new_fn(state: State):
-            stack, scope = state.stack, state.scope
-            local_fail: Fail = lambda reason: _fail(fn_name, reason, stack, scope)
+            local_fail: Fail = lambda reason: _fail(fn_name, reason, state.stack)
             try:
                 return fn(state, local_fail)
             except Exception as e:
