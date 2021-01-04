@@ -7,4 +7,4 @@ mkdocs-material
 pymdown-extensions
 pygments
 click
--e git+ssh://git@github.com/decorator-factory/fnldoc.git#egg=fnldoc
+-e git+https://github.com/decorator-factory/fnldoc.git#egg=fnldoc
