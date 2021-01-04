@@ -1,10 +1,10 @@
 from typing import TypeVar, Tuple
 from ..vm_utils import render_value_as_source
-from ..builtin_utils import Module, Fail, make_simple, raw_function
+from ..builtin_utils import BuiltinModule, Fail, make_simple, raw_function
 from ..types import  CallByValue, Put, State, Value, Stack, Scope
 
 
-module = Module("boxes")
+module = BuiltinModule("boxes")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 

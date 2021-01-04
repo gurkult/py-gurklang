@@ -4,9 +4,11 @@ Utilities for creating built-in modules
 
 from dataclasses import field, dataclass
 from immutables import Map
-from typing import Callable,  NoReturn, Optional, TypeVar, Dict, Tuple
-import gurklang.vm_utils as vm_utils
-from gurklang.types import Code, CodeFlags, Instruction, Scope, Stack, State, Value, NativeFunction, Vec
+from typing import Callable,  NoReturn, Optional, Sequence, TypeVar, Dict, Tuple, Union
+from . import vm_utils
+from . import vm
+from . import parser
+from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value, NativeFunction, Vec
 
 Z = TypeVar("Z", bound=Stack, contravariant=True)
 
@@ -22,9 +24,13 @@ Fail = Callable[[str], NoReturn]
 
 
 @dataclass
-class Module:
+class BuiltinModule:
     name: str
     members: Dict[str, Value] = field(init=False)
+
+    @property
+    def exports(self) -> Sequence[str]:
+        return tuple(self.members)
 
     def __post_init__(self):
         self.members = {}
@@ -46,11 +52,43 @@ class Module:
             return native_fn
         return inner
 
-    def make_scope(self, id: int, parent: Optional[Scope]=None):
-        if parent is None:
-            return Scope(parent=None, id=id, values=Map(self.members))
-        else:
-            return Scope(parent=parent.id, id=id, values=Map(self.members))
+    def make_scope(self, id: int):
+        return Scope(parent=None, id=id, values=Map(self.members))
+
+    def make_scope_with_existing_state(self, id: int, state: State):
+        scope = Scope(parent=vm.builtin_scope.id, id=id, values=Map(self.members))
+        return scope, state.set_scope(id, scope)
+
+
+
+
+@dataclass
+class GurklangModule:
+    name: str
+    exports: Sequence[str]
+    source_code: str
+
+    def make_scope(self, id: int):
+        state = (
+            State
+            .make(vm.global_scope, vm.builtin_scope)
+            .make_scope(vm.global_scope.id, id, persistent=True)
+        )
+        fn = Code(
+            parser.parse(self.source_code),
+            closure=None,
+            flags=CodeFlags.PARENT_SCOPE,
+            name=f"<module-{self.name}>"
+        )
+        state = vm.call(state, fn)
+        return state.scopes[id]
+
+    def make_scope_with_existing_state(self, id: int, state: State):
+        scope = self.make_scope(id)
+        return scope, state.set_scope(id, scope)
+
+
+Module = Union[BuiltinModule, GurklangModule]
 
 
 def make_simple(name: Optional[str] = None):
@@ -71,7 +109,7 @@ def make_function(name: Optional[str] = None):
             try:
                 return fn(state, local_fail)
             except Exception as e:
-                local_fail(f"uncaught exception {type(e).__name__}: {' '.join(e.args)}")
+                local_fail(f"uncaught exception {type(e).__name__}: {' '.join(map(str, e.args))}")
         native_fn = NativeFunction(new_fn, fn_name)
         return native_fn
     return inner

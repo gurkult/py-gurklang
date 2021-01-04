@@ -4,13 +4,13 @@ from typing import Sequence, TypeVar, Tuple
 from .. import parser
 from .. import ast_parser
 from ..vm_utils import render_value_as_source
-from ..builtin_utils import Module, Fail
+from ..builtin_utils import BuiltinModule, Fail
 from ..types import Atom, Box, Instruction, State, Str, Value, Stack, Scope, Int, Vec
 
 from collections import deque
 
 
-module = Module("inspect")
+module = BuiltinModule("inspect")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 

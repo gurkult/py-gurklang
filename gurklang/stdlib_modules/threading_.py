@@ -1,8 +1,8 @@
-from typing import List, Optional, TypeVar, Tuple, Deque
+from typing import List, Optional, TYPE_CHECKING, TypeVar, Tuple, Deque
 
 from immutables import Map
 from ..vm_utils import render_value_as_source, stringify_value
-from ..builtin_utils import Module, Fail, make_simple, vec_to_stack, stack_to_vec
+from ..builtin_utils import BuiltinModule, Fail, make_simple, vec_to_stack, stack_to_vec
 from ..types import Atom, CallByValue, Code, CodeFlags, Instruction, Put, State, Value, Stack, Scope, Vec
 from queue import Queue
 import heapq
@@ -10,12 +10,14 @@ import gurklang.vm
 import threading
 
 
-module = Module("threading")
+module = BuiltinModule("threading")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
-
-ThreadQ = Queue[Tuple[int, Stack]]
+if TYPE_CHECKING:
+    ThreadQ = Queue[Tuple[int, Stack]]
+else:
+    ThreadQ = Queue
 
 
 def _run_function(

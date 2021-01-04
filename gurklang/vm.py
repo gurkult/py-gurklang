@@ -63,42 +63,38 @@ def call_with_middleware(
 
     refcount = defaultdict(int, {builtin_scope.id: 1, global_scope.id: 1})
 
-    def finalizer(closure_id: int):
-        future_callbacks.append((3, lambda: _real_finalizer(closure_id)))
+    def finalizer(scope_id: int):
+        future_callbacks.append((3, lambda: _real_finalizer(scope_id)))
 
-    def _real_finalizer(closure_id: int):
+    def _real_finalizer(scope_id: int):
         nonlocal state
-
-        if closure_id in (builtin_scope.id, global_scope.id):
+        if scope_id in (builtin_scope.id, global_scope.id):
             return
-
-        refcount[closure_id] -= 1
-
-        if closure_id in state.scopes:
-            scope = state.get_scope(closure_id)
-            if scope is not None:
-                parent_id = scope.parent
-                if parent_id is not None:
-                    _real_finalizer(parent_id)
-        if refcount[closure_id] < 0:
+        refcount[scope_id] -= 1
+        scope = state.get_scope(scope_id)
+        if scope.persistent:
+            return
+        parent_id = scope.parent
+        if parent_id is not None:
+            _real_finalizer(parent_id)
+        if refcount[scope_id] < 0:
             pass
-        if refcount[closure_id] == 0:
-            state = state.kill_scope(closure_id)
-            del refcount[closure_id]
+        if refcount[scope_id] == 0:
+            state = state.kill_scope(scope_id)
+            del refcount[scope_id]
 
 
-    def introducer(closure_id: int):
+    def introducer(scope_id: int):
         nonlocal state
-
-        if closure_id in (builtin_scope.id, global_scope.id):
+        if scope_id in (builtin_scope.id, global_scope.id):
             return
-
-        refcount[closure_id] += 1
-        scope = state.get_scope(closure_id)
-        if scope is not None:
-            parent_id = scope.parent
-            if parent_id is not None:
-                introducer(parent_id)
+        refcount[scope_id] += 1
+        scope = state.get_scope(scope_id)
+        if scope.persistent:
+            return
+        parent_id = scope.parent
+        if parent_id is not None:
+            introducer(parent_id)
 
     future_callbacks = []
 
@@ -125,7 +121,11 @@ def call_with_middleware(
             if function.tag == "code":
                 _load_function(pipe, function)
             else:
-                state = function.fn(state)
+                try:
+                    state = function.fn(state)
+                except:
+                    print(f"{function=}")
+                    raise
 
         else:
             state, to_introduce, to_finalize = execute(state, instruction, introducer, finalizer)
@@ -136,6 +136,8 @@ def call_with_middleware(
 
         middleware(instruction, old_state.stack, state.stack)
 
+    for (_, cb) in future_callbacks:
+        cb()
     return state
 
 
@@ -194,6 +196,6 @@ def run(instructions: Sequence[Instruction]):
 def run_with_middleware(instructions: Sequence[Instruction], middleware: MiddlewareT):
     return call_with_middleware(
         State.make(global_scope, builtin_scope),
-        Code(instructions, closure=None, name="<entry-point>"),
+        Code(instructions, closure=None, name="<entry-point>", flags=CodeFlags.PARENT_SCOPE),
         middleware
     )

@@ -1,12 +1,12 @@
 """
 Standard library modules that aren't built-ins
 """
-from typing import List
-from ..builtin_utils import Module
-from . import math, inspect, coro, repl_utils, boxes, threading_, strings
+from gurklang.builtin_utils import GurklangModule, BuiltinModule
+from typing import List, Union
+from . import math, inspect, coro, repl_utils, boxes, threading_, strings, recursion
 
 
-modules: List[Module] = [
+modules: List[Union[BuiltinModule, GurklangModule]] = [
     math.module,
     inspect.module,
     coro.module,
@@ -14,4 +14,5 @@ modules: List[Module] = [
     boxes.module,
     threading_.module,
     strings.module,
+    recursion.module,
 ]

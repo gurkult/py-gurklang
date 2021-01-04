@@ -327,7 +327,6 @@ class Repl:
 
     def __init__(self, prelude: str = DEFAULT_PRELUDE, program: str = ""):
         state = run([])
-        state = state.make_scope(state.current_scope_id, vm.generate_scope_id())
         state = call(state, code(program))
         self.state = call(state, code(prelude))
         self.last_traceback = None
