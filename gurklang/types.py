@@ -62,6 +62,17 @@ class State:
     box_in_transaction: Map  # Map[int, bool]
     last_box_id: int
 
+    @staticmethod
+    def make(global_scope: Scope, builtin_scope: Scope):
+        return State(
+            None,
+            Map({builtin_scope.id: builtin_scope, global_scope.id: global_scope}),
+            (global_scope.id, (builtin_scope.id, None)),
+            Map(),
+            Map(),
+            0
+        )
+
     @property
     def current_scope_id(self) -> int:
         return self.scope_stack[0] # type: ignore

@@ -9,14 +9,14 @@ Z = TypeVar("Z", bound=Stack)
 
 
 @make_simple()
-def __iterate(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def __iterate(stack: T[V, T[V, S]], fail: Fail):
     (initial, (fn, rest)) = stack
     initial_stack_vec = vec_to_stack(initial, fail)
 
     @make_simple()
-    def __set_resulting_stack(resulting_stack: Stack, resulting_scope: Scope, _: Fail):
+    def __set_resulting_stack(resulting_stack: Stack, _: Fail):
         stack_vec = stack_to_vec(resulting_stack)
-        return (stack_vec, (fn, rest)), resulting_scope
+        return (stack_vec, (fn, rest))
 
     instructions: List[Instruction] = [
         Put(restore_stack((fn, initial_stack_vec))),    # stack: restore_stack(...)
@@ -26,7 +26,7 @@ def __iterate(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         CallByValue()                                   # stack: (resulting Vec, (fn, rest))
     ]
     code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--iterate")
-    return (code, rest), scope
+    return (code, rest)
 
 
 module.add("iterate",
@@ -41,6 +41,6 @@ module.add("iterate",
 
 def restore_stack(stack: Stack):
     @make_simple()
-    def __restore_stack(__stack: Stack, scope: Scope, fail: Fail):
-        return stack, scope
+    def __restore_stack(__stack: Stack, __fail: Fail):
+        return stack
     return __restore_stack

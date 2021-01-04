@@ -16,7 +16,7 @@ Z = TypeVar("Z", bound=Stack)
 
 
 @module.register_simple()
-def tokenize(stack: T[V, S], scope: Scope, fail: Fail):
+def tokenize(stack: T[V, S], fail: Fail):
     (source_code, rest) = stack
     if source_code.tag != "str":
         fail(f"{render_value_as_source(source_code)} is not a string")
@@ -31,7 +31,7 @@ def tokenize(stack: T[V, S], scope: Scope, fail: Fail):
             Int(end)))
         ))
         rv = Vec((tv, rv))
-    return (rv, rest), scope
+    return (rv, rest)
 
 
 def _ast_to_value(ast: ast_parser.ASTNode) -> Value:
@@ -58,25 +58,25 @@ def _ast_to_value(ast: ast_parser.ASTNode) -> Value:
 
 
 @module.register_simple()
-def build_ast(stack: T[V, S], scope: Scope, fail: Fail):
+def build_ast(stack: T[V, S], fail: Fail):
     (source_code, rest) = stack
     if source_code.tag != "str":
         fail(f"{render_value_as_source(source_code)} is not a string")
     try:
         ast = ast_parser.parse_as_ast(source_code.value)
-        return (_ast_to_value(ast), rest), scope
+        return (_ast_to_value(ast), rest)
     except:
-        return (Atom(":syntax-error"), rest), scope
+        return (Atom(":syntax-error"), rest)
 
 
 @module.register_simple()
-def code_dump(stack: T[V, S], scope: Scope, fail: Fail):
+def code_dump(stack: T[V, S], fail: Fail):
     (code, rest) = stack
     if code.tag != "code":
         fail(f"{code} is not code")
     for i in code.instructions:
         print(render_value_as_source(i.as_vec()))
-    return rest, scope
+    return rest
 
 
 @module.register()
@@ -126,9 +126,9 @@ def dis(state: State, fail: Fail):
 
 
 @module.register_simple("type")
-def get_type(stack: T[V, S], scope: Scope, fail: Fail):
+def get_type(stack: T[V, S], fail: Fail):
     (head, rest) = stack
-    return (Atom(head.tag.replace("_", "-")), rest), scope
+    return (Atom(head.tag.replace("_", "-")), rest)
 
 
 def _stack_to_vec(stack: Stack) -> Vec:
@@ -140,11 +140,11 @@ def _stack_to_vec(stack: Stack) -> Vec:
 
 
 @module.register_simple("box-id?")
-def box_id(stack: T[V, S], scope: Scope, fail: Fail):
+def box_id(stack: T[V, S], fail: Fail):
     (box, rest) = stack
     if box.tag != "box":
         fail(f"{render_value_as_source(box)} is not a box")
-    return (Int(box.id), rest), scope
+    return (Int(box.id), rest)
 
 
 @module.register("box-transactions?")
@@ -175,11 +175,11 @@ def does_box_exist(state: State, fail: Fail):
 
 
 @module.register_simple("make-box!")
-def make_box(stack: T[V, S], scope: Scope, fail: Fail):
+def make_box(stack: T[V, S], fail: Fail):
     (id, rest) = stack
     if id.tag != "int":
         fail(f"{render_value_as_source(id)} is not an int")
-    return (Box(id.value), rest), scope
+    return (Box(id.value), rest)
 
 
 @module.register("boxes?")

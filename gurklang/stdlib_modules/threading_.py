@@ -26,13 +26,7 @@ def _run_function(
     name: str,
     source_code: Optional[str]
 ):
-    begin_state = State(
-        stack=stack,
-        scope=gurklang.vm.make_scope(gurklang.vm.builtin_scope),
-        boxes=Map(),
-        box_in_transaction=Map(),
-        last_box_id=0
-    )
+    begin_state = State.make(gurklang.vm.global_scope, gurklang.vm.builtin_scope).with_stack(stack)
     end_state = gurklang.vm.call(
         begin_state,
         Code(instructions, None, name=name, source_code=source_code)

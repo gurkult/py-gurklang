@@ -1,9 +1,10 @@
 from immutables import Map
-from typing import Callable, Dict, Optional, Sequence, Union, Tuple
+from typing import Callable, Optional, Sequence, Union
+
 from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
-    Scope, Stack, Instruction, Code, State, Value, Vec
+    Scope, Stack, Instruction, Code, State, Vec
 )
 from collections import deque
 import threading
@@ -128,14 +129,7 @@ def run(instructions: Sequence[Instruction]):
 
 def run_with_middleware(instructions: Sequence[Instruction], middleware: MiddlewareT):
     return call_with_middleware(
-        State(
-            None,
-            Map({builtin_scope.id: builtin_scope, global_scope.id: global_scope}),
-            (global_scope.id, (builtin_scope.id, None)),
-            Map(),
-            Map(),
-            0
-        ),
+        State.make(global_scope, builtin_scope),
         Code(instructions, closure=None, name="<entry-point>"),
         middleware
     )
