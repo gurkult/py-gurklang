@@ -4,9 +4,8 @@ Utilities for creating built-in modules
 
 from dataclasses import field, dataclass
 from immutables import Map
-from typing import Callable,  NoReturn, Optional, Sequence, TypeVar, Dict, Tuple, Union
+from typing import Callable,  NoReturn, Optional, Sequence, TypeVar, Dict, Union
 from . import vm_utils
-from . import vm
 from . import parser
 from .types import Code, CodeFlags, Instruction, Scope, Stack, State, Value, NativeFunction, Vec
 
@@ -56,6 +55,7 @@ class BuiltinModule:
         return Scope(parent=None, id=id, values=Map(self.members))
 
     def make_scope_with_existing_state(self, id: int, state: State):
+        from . import vm
         scope = Scope(parent=vm.builtin_scope.id, id=id, values=Map(self.members))
         return scope, state.set_scope(id, scope)
 
@@ -69,6 +69,7 @@ class GurklangModule:
     source_code: str
 
     def make_scope(self, id: int):
+        from . import vm
         state = (
             State
             .make(vm.global_scope, vm.builtin_scope)
