@@ -1,4 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Overpass+Mono&display=swap');
+
+
+:root {
+    --monospace-font: 'Overpass Mono', monospace;
+}
+
 code {
+    font-family: var(--monospace-font);
     white-space: pre;
     word-break: keep-all;
 }
@@ -30,7 +38,7 @@ code {
 .docs-tooltip-title {
     grid-column: 1;
     grid-row: 1;
-    font-family: 'Roboto Mono';
+    font-family: var(--monospace-font);
 }
 
 
@@ -39,7 +47,7 @@ code {
     grid-row: 1;
     grid-area: "stackdiagram";
     font-size: 16px;
-    font-family: 'Roboto Mono';
+    font-family: var(--monospace-font);
     font-weight: 600;
     text-align: center;
 }
@@ -52,14 +60,24 @@ code {
     grid-area: "explanation";
 }
 
+code:not([language]), tt {
+    display: inline-block;
+    word-wrap: none;
+    background: var(--shade-color);
+    color: var(--dark-text-color);
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    border-radius: 3px;
+    min-width: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+}
 
 code[language=gurklang] {
 	display: block;
     overflow-x: auto;
     padding: 0.7em;
     border-radius: 8px;
-    margin-left: 16px;
-    margin-right: 16px;
 	background: rgb(35, 45, 45) !important;
 	color: #ffffff !important;
     font-size: 16px !important;
@@ -127,4 +145,9 @@ code[language=gurklang] {
 
 .gurklang--section--bad {
     border-left-color: rgba(255, 21, 21, 0.623);
+}
+
+div#content {
+    position: relative;
+    padding-bottom: 2em;
 }

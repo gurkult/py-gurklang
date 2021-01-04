@@ -1,39 +1,32 @@
 from __future__ import annotations
 from enum import  IntFlag
+import weakref
 from immutables import Map
 try:
     from typing_extensions import Literal
 except ImportError:
     from typing import Literal
-from typing import Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
+from typing import Any, Callable, ClassVar, Dict, Mapping, Sequence, Union, Optional, Tuple
 from dataclasses import dataclass, field, replace as dataclass_replace
 
 
 @dataclass(frozen=True, repr=False)
 class Scope:
-    parent: Optional[Scope]
+    parent: Optional[int]
     id: int
     values: Map
-    _cache: Dict[str, Value] = field(default_factory=dict)
 
-    def __getitem__(self, name: str) -> Value:
-        cache = self._cache
-        if name in cache:
-            return cache[name]
-        while self is not None:
-            v = self._cache.get(name) or self.values.get(name)
-            if v is not None:
-                cache[name] = v
-                return v
-            self = self.parent
-        raise KeyError(name) from None
+    def get(self, name: str, state: "State") -> Value:
+        if name in self.values:
+            return self.values[name]
+        if self.parent is None:
+            raise KeyError(name)
+        return state.get_by_name(self.parent, name)
 
     def __repr__(self):
-        return f"<Scope {self.id!r}: {' '.join(self.values.keys())}, id=, parent={self.parent!r}>"
+        return f"<Scope {self.id!r}: parent={self.parent!r}>"
 
-    def without_member(self, key: str, value: Value):
-        if key not in self.values:
-            return self
+    def without_member(self, key: str):
         return Scope(self.parent, self.id, self.values.delete(key))
 
     def with_member(self, key: str, value: Value) -> Scope:
@@ -44,33 +37,46 @@ class Scope:
     def with_members(self, update: Mapping[str, Value]):
         return Scope(self.parent, self.id, self.values.update(update))
 
-    def with_parent(self, parent: Optional[Scope]):
+    def with_parent(self, parent: Optional[int]):
         return Scope(parent, self.id, self.values)
-
-    def join_closure_scope(self, closure_scope: Optional[Scope]) -> Scope:
-        """
-        Refresh a closure scope that has `self` somewhere upstream.
-        This is needed because scopes are immutable, and an outer scope
-        might've been updated with new names or names being redefined.
-        """
-        if closure_scope is None or self.id == closure_scope.id:
-            return self
-        else:
-            return closure_scope.with_parent(self.join_closure_scope(closure_scope.parent))
 
 
 # The stack is immutable and is modelled as a linked list:
+ScopeStack = Optional[Tuple[int, "ScopeStack"]]
 Stack = Optional[Tuple["Value", "Stack"]]
-InfiniteStack = Tuple["Value", Tuple["Value", Tuple["Value", "InfiniteStack"]]]
+InfiniteStack = Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value",
+                Tuple["Value", "InfiniteStack"]]]]]]]]
 
 
 @dataclass(frozen=True)
 class State:
     stack: Stack
-    scope: Scope
+    scopes: Map  # Map[int, Scope]
+    scope_stack: ScopeStack
     boxes: Map  # Map[int, Stack]
     box_in_transaction: Map  # Map[int, bool]
     last_box_id: int
+
+    @staticmethod
+    def make(global_scope: Scope, builtin_scope: Scope):
+        return State(
+            None,
+            Map({builtin_scope.id: builtin_scope, global_scope.id: global_scope}),
+            (global_scope.id, (builtin_scope.id, None)),
+            Map(),
+            Map(),
+            0
+        )
+
+    @property
+    def current_scope_id(self) -> int:
+        return self.scope_stack[0] # type: ignore
 
     def is_box_in_transaction(self, id: int) -> bool:
         return self.box_in_transaction.get(id, False)
@@ -129,8 +135,8 @@ class State:
     def with_stack(self, stack: Stack):
         return dataclass_replace(self, stack=stack)
 
-    def with_scope(self, scope: Scope):
-        return dataclass_replace(self, scope=scope)
+    # def with_scope(self, scope: Scope):
+    #     return dataclass_replace(self, scope=scope)
 
     def _with_boxes(self, boxes: Map):
         return dataclass_replace(self, boxes=boxes)
@@ -151,6 +157,63 @@ class State:
         if id not in self.boxes:
             raise RuntimeError(f"Trying to kill nonexistent box with id {id}")
         return self._with_boxes(self.boxes.delete(id))
+
+    def make_scope(self, parent_id: int, new_id: int) -> "State":
+        assert parent_id in self.scopes
+        assert new_id not in self.scopes
+        new_scope = Scope(parent_id, new_id, Map())
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.set(new_id, new_scope),
+            scope_stack=(new_id, self.scope_stack)
+        )
+
+    def pop_scope(self) -> "State":
+        return dataclass_replace(
+            self,
+            scope_stack=self.scope_stack[1]
+        )
+
+    def get_by_name(self, scope_id: int, name: str) -> "Value":
+        if scope_id not in self.scopes:
+            raise KeyError(f"No scope #{scope_id} when trying to get {name}, scopestack: {self.scope_stack}")
+        return self.scopes[scope_id].get(name, self)
+
+    def look_up_name_in_current_scope(self, name: str) -> "Value":
+        return self.get_by_name(self.current_scope_id, name)
+
+    def set_name(self, name: str, value: "Value") -> "State":
+        old_scope: Scope = self.scopes[self.current_scope_id]
+        new_scope = old_scope.with_member(name, value)
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.set(self.current_scope_id, new_scope)
+        )
+
+    def forget_name(self, name: str) -> "State":
+        old_scope: Scope = self.scopes[self.current_scope_id]
+        new_scope = old_scope.without_member(name)
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.set(self.current_scope_id, new_scope)
+        )
+
+    def set_names(self, update: Mapping[str, "Value"]) -> "State":
+        old_scope: Scope = self.scopes[self.current_scope_id]
+        new_scope = old_scope.with_members(update)
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.set(self.current_scope_id, new_scope)
+        )
+
+    def get_scope(self, scope_id: int) -> Optional[Scope]:
+        return self.scopes[scope_id]
+
+    def kill_scope(self, scope_id: int) -> "State":
+        return dataclass_replace(
+            self,
+            scopes=self.scopes.delete(scope_id)
+        )
 
 
 @dataclass(frozen=True)
@@ -204,14 +267,14 @@ class MakeVec:
 @dataclass(frozen=True)
 class MakeScope:
     """Create a local scope given a parent scope"""
-    parent: Optional[Scope]
+    parent_id: int
     tag: ClassVar[Literal["make_scope"]] = "make_scope"
 
     def as_vec(self):
-        if self.parent is None:
+        if self.parent_id is None:
             return Vec((Atom("MakeScope"),))
         else:
-            return Vec((Atom("MakeScope"), Int(self.parent.id)))
+            return Vec((Atom("MakeScope"), Int(self.parent_id)))
 
 @dataclass(frozen=True)
 class PopScope:
@@ -300,13 +363,27 @@ class Vec:
 
 @dataclass(frozen=True)
 class Code:
-    """Code value like { :b var :a var b a }"""
+    """Code value like { :b def :a def b a }"""
     instructions: Sequence[Instruction]
-    closure: Optional[Scope]
+    closure: Optional[int]
     flags: CodeFlags = CodeFlags.EMPTY
     name: str = "λ"
     source_code: Optional[str] = None
+    introducer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
+    finalizer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
     tag: ClassVar[Literal["code"]] = "code"
+
+    def introduce(self):
+        if self.introducer is not None and self.closure is not None:
+            introducer = self.introducer()
+            if introducer is not None:
+                introducer(self.closure)
+
+    def __del__(self):
+        if self.finalizer is not None and self.closure is not None:
+            finalizer = self.finalizer()
+            if finalizer is not None:
+                finalizer(self.closure)
 
     def with_name(self, name: str) -> Code:
         return dataclass_replace(self, name=name)

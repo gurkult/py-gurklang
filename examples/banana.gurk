@@ -1,0 +1,10 @@
+:math :all import
+
+{ { (b _ ())     { b }
+    (b f (a as)) { b f as banana a f ! }
+  } case
+} :banana jar
+
+
+1 {*} (2 (3 (4 ()))) banana println
+1 {*} (2 (3 (4 (5 ())))) banana println

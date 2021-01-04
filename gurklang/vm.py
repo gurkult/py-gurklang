@@ -1,37 +1,42 @@
+import weakref
 from immutables import Map
-from typing import Callable, Dict, Optional, Sequence, Union, Tuple
+from typing import Callable, Optional, Sequence, Tuple, Union
+
 from . import prelude
 from gurklang.types import (
     CallByValue, CodeFlags, MakeScope, NativeFunction, PopScope, Put,
-    Scope, Stack, Instruction, Code, State, Value, Vec
+    Scope, Stack, Instruction, Code, State, Vec
 )
-from collections import deque
+from collections import defaultdict, deque
+import threading
 
 
 MiddlewareT = Callable[[Instruction, Stack, Stack], None]
 
 
+_SCOPE_ID_LOCK = threading.Lock()
 _SCOPE_ID = 0
 def generate_scope_id():
     global _SCOPE_ID
-    _SCOPE_ID += 1
+    with _SCOPE_ID_LOCK:
+        _SCOPE_ID += 1
     return _SCOPE_ID
 
 
-def make_scope(parent: Optional[Scope]) -> Scope:
+def make_scope(parent: Optional[int]) -> Scope:
     return Scope(parent, generate_scope_id(), Map())
 
 
-def _load_function(scope: Scope, pipe: "deque[Instruction]", function: Union[Code, NativeFunction]):
+def _load_function(pipe: "deque[Instruction]", function: Union[Code, NativeFunction]):
     if function.tag == "native":
         pipe.append(CallByValue())
         pipe.append(Put(function))
-    elif function.flags & CodeFlags.PARENT_SCOPE:
+    elif function.flags & CodeFlags.PARENT_SCOPE or function.closure is None:
         pipe.extend(reversed(function.instructions))
     else:
         pipe.append(PopScope())
         pipe.extend(reversed(function.instructions))
-        pipe.append(MakeScope(scope.join_closure_scope(function.closure)))
+        pipe.append(MakeScope(function.closure))
 
 
 def call(state: State, function: Union[Code, NativeFunction]) -> State:
@@ -54,85 +59,141 @@ def call_with_middleware(
     """
     pipe: "deque[Instruction]" = deque()
 
-    # locked_boxes is a mapping between the box id and the previously held value in the box
-    locked_boxes: Dict[int, Value] = {}
+    _load_function(pipe, function)
 
-    _load_function(state.scope, pipe, function)
+    refcount = defaultdict(int, {builtin_scope.id: 1, global_scope.id: 1})
+
+    def finalizer(closure_id: int):
+        future_callbacks.append((3, lambda: _real_finalizer(closure_id)))
+
+    def _real_finalizer(closure_id: int):
+        nonlocal state
+
+        if closure_id in (builtin_scope.id, global_scope.id):
+            return
+
+        refcount[closure_id] -= 1
+
+        if closure_id in state.scopes:
+            scope = state.get_scope(closure_id)
+            if scope is not None:
+                parent_id = scope.parent
+                if parent_id is not None:
+                    _real_finalizer(parent_id)
+        if refcount[closure_id] < 0:
+            pass
+        if refcount[closure_id] == 0:
+            state = state.kill_scope(closure_id)
+            del refcount[closure_id]
+
+
+    def introducer(closure_id: int):
+        nonlocal state
+
+        if closure_id in (builtin_scope.id, global_scope.id):
+            return
+
+        refcount[closure_id] += 1
+        scope = state.get_scope(closure_id)
+        if scope is not None:
+            parent_id = scope.parent
+            if parent_id is not None:
+                introducer(parent_id)
+
+    future_callbacks = []
 
     while pipe:
+        new_future_callbacks = []
+        for (i, cb) in future_callbacks[:]:
+            if i <= 0:
+                cb()
+            else:
+                new_future_callbacks.append((i-1, cb))
+        future_callbacks = new_future_callbacks
+
         instruction = pipe.pop()
 
         old_state = state
 
         if instruction.tag == "call":
             pipe.append(CallByValue())
-            pipe.append(Put(state.scope[instruction.function_name]))
+            pipe.append(Put(state.look_up_name_in_current_scope(instruction.function_name)))
 
         elif instruction.tag == "call_by_value":
             (function, stack) = state.stack  # type: ignore
             state = state.with_stack(stack)
             if function.tag == "code":
-                _load_function(state.scope, pipe, function)
+                _load_function(pipe, function)
             else:
                 state = function.fn(state)
 
         else:
-            stack, scope = execute(state.stack, state.scope, instruction)
-            state = state.with_stack(stack).with_scope(scope)
+            state, to_introduce, to_finalize = execute(state, instruction, introducer, finalizer)
+            for id in to_introduce:
+                introducer(id)
+            for id in to_finalize:
+                finalizer(id)
 
         middleware(instruction, old_state.stack, state.stack)
-
-    if locked_boxes != {}:
-        ids = tuple(locked_boxes)
-        raise RuntimeError(f"The main loop has ended, but boxes {ids} are still locked")
 
     return state
 
 
+ClosureCallback = Callable[[int], None]
 
-def execute(stack: Stack, scope: Scope, instruction: Instruction) -> Tuple[Stack, Scope]:
+def execute(
+    state: State,
+    instruction: Instruction,
+    introducer: ClosureCallback,
+    finalizer: ClosureCallback
+) -> Tuple[State, Tuple[int, ...], Tuple[int, ...]]:
     """
     Execute an instruction and return new state of the system.
-
-    Pure function, i.e. doesn't perform any side effects.
     """
     if instruction.tag == "put":
-        return (instruction.value, stack), scope
+        return state.push(instruction.value), (), ()
 
     elif instruction.tag == "put_code":
-        return (Code(instruction.instructions, scope, source_code=instruction.source_code), stack), scope
+        return state.push(
+            Code(
+                instructions=instruction.instructions,
+                closure=state.current_scope_id,
+                source_code=instruction.source_code,
+                introducer=weakref.ref(introducer),
+                finalizer=weakref.ref(finalizer),
+            ),
+        ), (state.current_scope_id,), ()
 
     elif instruction.tag == "make_vec":
+        stack = state.stack
         elements = []
         for _ in range(instruction.size):
             head, stack = stack  # type: ignore
             elements.append(head)
-        return (Vec(elements[::-1]), stack), scope
+        return state.with_stack(stack).push(Vec(elements[::-1])), (), ()
 
     elif instruction.tag == "make_scope":
-        return stack, make_scope(instruction.parent)
+        new_id = generate_scope_id()
+        return state.make_scope(instruction.parent_id, new_id), (instruction.parent_id, new_id,), ()
 
     elif instruction.tag == "pop_scope":
-        return stack, scope.parent  # type: ignore
+        return state.pop_scope(), (), (state.current_scope_id,)
 
     else:
         raise RuntimeError(instruction)
 
 
 builtin_scope = prelude.module.make_scope(generate_scope_id())
-global_scope = make_scope(parent=builtin_scope)
+global_scope = make_scope(parent=builtin_scope.id)
 
 
 def run(instructions: Sequence[Instruction]):
-    return call(
-        State(None, global_scope, Map(), Map(), 0),
-        Code(instructions, closure=None, name="<entry-point>")
-    )
+    return run_with_middleware(instructions, middleware = lambda _, __, ___: None)
 
 
 def run_with_middleware(instructions: Sequence[Instruction], middleware: MiddlewareT):
     return call_with_middleware(
-        State(None, global_scope, Map(), Map(), 0),
+        State.make(global_scope, builtin_scope),
         Code(instructions, closure=None, name="<entry-point>"),
         middleware
     )

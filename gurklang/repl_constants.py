@@ -2,18 +2,19 @@ from .trie import Trie
 
 
 DEFAULT_PRELUDE = R"""
-:repl-utils :all                               import
-:inspect    :prefix                            import
-:coro       :prefix                            import
-:math       ( < + - * / % %make %+ %- %* %/ )  import
-:boxes      ( box <- -> )                      import
+:boxes      ( <- )     import
+:repl-utils :all     import
+:inspect    :prefix  import
+:coro       :prefix  import
+:math       :all     import
+:boxes      :all     import
 
 
-"" box :repl[ml-prompt]     var
-"" box :repl[prompt]        var
-"" box :repl[before-output] var
-"" box :repl[after-output]  var
-"" box :repl[before-stack]  var
+"" box :repl[ml-prompt]     def
+"" box :repl[prompt]        def
+"" box :repl[before-output] def
+"" box :repl[after-output]  def
+"" box :repl[before-stack]  def
 
 
 {
@@ -60,7 +61,7 @@ DEFAULT_PRELUDE = R"""
 :repl[style:in-out] jar
 
 
-:false box :repl[display-stack] var
+:false box :repl[display-stack] def
 
 { repl[display-stack] :true <- }
 :show-stack jar

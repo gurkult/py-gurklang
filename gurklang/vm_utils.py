@@ -1,6 +1,5 @@
-from typing import Union
-from .types import Atom, Scope, Stack, Value, Vec
-from typing import Any, Iterator, List, Dict, Literal
+from .types import Scope, Stack, Value, Vec
+from typing import Any, Iterator, List, Dict
 
 
 def stringify_value(v: Value, depth: int = 0):
@@ -21,7 +20,10 @@ def stringify_value(v: Value, depth: int = 0):
         else:
             return v.name
     elif v.tag == "vec":
-        return "(" + " ".join(render_value_as_source(x, depth + 1) for x in v.values) + ")"
+        return "(" + " ".join(
+            x.value if x.tag == "atom" else render_value_as_source(x, depth + 1)
+            for x in v.values
+        ) + ")"
     elif v.tag == "native":
         return f"`{v.name}`"
     elif v.tag == "box":
@@ -58,13 +60,6 @@ def stringify_stack(stack: Stack, max_depth: int = 0):
     else:
         head, rest = stack
         return f"({render_value_as_source(head)} {stringify_stack(rest, max_depth - 1)})"
-
-
-def repr_scope(scope: Scope) -> Dict[str, Any]:
-    d = dict(scope.values.items())
-    if scope.parent is not None:
-        d["(parent)"] = repr_scope(scope.parent)
-    return d
 
 
 def tuple_equals(x: Vec, y: Vec, fail) -> bool:

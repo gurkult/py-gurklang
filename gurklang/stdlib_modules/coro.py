@@ -1,7 +1,6 @@
 from typing import List, TypeVar, Tuple
-from ..vm_utils import stringify_value
-from ..builtin_utils import Module, Fail, make_simple
-from ..types import CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope, Vec
+from ..builtin_utils import Module, Fail, make_simple, vec_to_stack, stack_to_vec
+from ..types import CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope
 
 
 module = Module("coro")
@@ -9,39 +8,15 @@ T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 
-def _vec_to_stack(t: Value, fail: Fail) -> Stack:
-    stack = None
-    if t.tag != "vec":
-        fail(f"expected tuple, got {t}")
-    while True:
-        if len(t.values) == 0:
-            return stack
-        if len(t.values) != 2:
-            fail(f"got tuple of size {len(t.values)} {stringify_value(t)}, expected 2")
-        head, rest = t.values
-        if rest.tag != "vec":
-            fail(f"expected tuple as second element, got {rest}")
-        t = rest
-        stack = (head, stack)
-
-
-def _stack_to_vec(stack: Stack) -> Vec:
-    rv = Vec([])
-    while stack is not None:
-        head, stack = stack  # type: ignore
-        rv = Vec([head, rv])
-    return rv
-
-
 @make_simple()
-def __iterate(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
+def __iterate(stack: T[V, T[V, S]], fail: Fail):
     (initial, (fn, rest)) = stack
-    initial_stack_vec = _vec_to_stack(initial, fail)
+    initial_stack_vec = vec_to_stack(initial, fail)
 
     @make_simple()
-    def __set_resulting_stack(resulting_stack: Stack, resulting_scope: Scope, _: Fail):
-        stack_vec = _stack_to_vec(resulting_stack)
-        return (stack_vec, (fn, rest)), resulting_scope
+    def __set_resulting_stack(resulting_stack: Stack, _: Fail):
+        stack_vec = stack_to_vec(resulting_stack)
+        return (stack_vec, (fn, rest))
 
     instructions: List[Instruction] = [
         Put(restore_stack((fn, initial_stack_vec))),    # stack: restore_stack(...)
@@ -51,7 +26,7 @@ def __iterate(stack: T[V, T[V, S]], scope: Scope, fail: Fail):
         CallByValue()                                   # stack: (resulting Vec, (fn, rest))
     ]
     code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--iterate")
-    return (code, rest), scope
+    return (code, rest)
 
 
 module.add("iterate",
@@ -66,6 +41,6 @@ module.add("iterate",
 
 def restore_stack(stack: Stack):
     @make_simple()
-    def __restore_stack(__stack: Stack, scope: Scope, fail: Fail):
-        return stack, scope
+    def __restore_stack(__stack: Stack, __fail: Fail):
+        return stack
     return __restore_stack

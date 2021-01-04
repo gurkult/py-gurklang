@@ -28,7 +28,7 @@ tokenizer = build_tokenizer(
 
 Token = tokenizer.token_type
 TokenName = tokenizer.token_name_type
-
+Stream = tokenizer.token_stream_type
 
 class ParseError(Exception):
     def __init__(self, source: str, while_parsing_what: str, token: Token):
@@ -40,6 +40,10 @@ class ParseError(Exception):
     def is_eof(self):
         # This is related to the RIGHT_BRACE } hack in the `parse` function
         return self.token.position >= len(self.source) - 1
+
+
+def lex_all(source: str):
+    return tokenizer.tokenize_with_ignored(source)
 
 
 def lex(source: str) -> TokenStream[TokenName]:

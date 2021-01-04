@@ -6,7 +6,7 @@ from .native_utils import forall, comparables
 @forall(Int, Int)
 def test_swap_is_own_inverse():
     """
-    :b var :a var
+    :b def :a def
 
     a b swap swap
 
@@ -16,7 +16,7 @@ def test_swap_is_own_inverse():
 @forall(Int, Int, Int)
 def test__rot_rot_rot__is_id():
     """
-    :c var :b var :a var
+    :c def :b def :a def
 
     a b c rot rot rot
 
