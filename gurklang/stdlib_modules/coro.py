@@ -1,9 +1,9 @@
 from typing import List, TypeVar, Tuple
-from ..builtin_utils import Module, Fail, make_simple, vec_to_stack, stack_to_vec
+from ..builtin_utils import BuiltinModule, Fail, make_simple, vec_to_stack, stack_to_vec
 from ..types import CallByValue, Code, CodeFlags, Instruction, Put, Value, Stack, Scope
 
 
-module = Module("coro")
+module = BuiltinModule("coro")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 

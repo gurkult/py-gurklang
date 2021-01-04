@@ -24,7 +24,7 @@ class Import(NamedTuple):
 
 def find_imports(ast: CodeLiteral, include_prelude: bool = False) -> Iterator[Import]:
     if include_prelude:
-        for name in prelude_module.members.keys():
+        for name in prelude_module.exports:
             yield Import("prelude", name, name)
 
     for module_name, _all, _import in find_star_imports(ast.nodes):
@@ -32,7 +32,7 @@ def find_imports(ast: CodeLiteral, include_prelude: bool = False) -> Iterator[Im
         m = get_module(module_name.value)
         if m is None:
             continue
-        for name in m.members.keys():
+        for name in m.exports:
             yield Import(module_name.value, name, name)
 
     for module_name, _prefix, _import in find_prefix_imports(ast.nodes):
@@ -40,7 +40,7 @@ def find_imports(ast: CodeLiteral, include_prelude: bool = False) -> Iterator[Im
         m = get_module(module_name.value)
         if m is None:
             continue
-        for name in m.members.keys():
+        for name in m.exports:
             yield Import(module_name.value, name, f"{module_name.value}.{name}")
 
     for module_name, imported_names, _import in find_list_imports(ast.nodes):

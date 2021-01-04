@@ -5,10 +5,11 @@ from typing import Iterable, List
 
 from gurklang.types import *  # type: ignore
 from . import stdlib_modules
-from .builtin_utils import Module, Fail, make_simple, raw_function
+from . import vm
+from .builtin_utils import BuiltinModule, Fail, Module, make_simple, raw_function
 from .vm_utils import stringify_value, render_value_as_source, tuple_equals
 
-module = Module("builtins")
+module = BuiltinModule("builtins")
 
 # Shortcuts for brevity
 T, V, S = Tuple, Value, Stack
@@ -458,7 +459,7 @@ module.add(
 
 # <`import` implementation>
 
-def _make_name_getter(lookup: Dict[str, Value], name: str):
+def _make_name_getter(lookup: Mapping[str, Value], name: str):
     def name_getter(state: State):
         if state.stack is None:
             raise RuntimeError("module getter on an empty stack")
@@ -476,43 +477,50 @@ def _make_name_getter(lookup: Dict[str, Value], name: str):
     return Code([Put(NativeFunction(name_getter, name)), CallByValue(), CallByValue()], None, CodeFlags.PARENT_SCOPE)
 
 
-def _import_all(module: Module):
-    return module.members
+def _scope_to_dict(scope: Scope) -> Dict[str, Value]:
+    rv = {}
+    for k, v in scope.values.items():
+        rv[k] = v
+    return rv
 
 
-def _import_qualified(module: Module, target_name: str):
-    return {target_name: _make_name_getter(module.members, target_name)}
+def _import_all(scope: Scope):
+    return _scope_to_dict(scope)
 
 
-def _import_prefixed(module: Module, prefix: str):
-    return {f"{prefix}.{k}": v for k, v in module.members.items()}
+def _import_qualified(scope: Scope, target_name: str):
+    return {target_name: _make_name_getter(scope.values, target_name)}  # type: ignore
 
 
-def _import_cherrypick(module: Module, names: Iterable[str]):
-    return {name: module.members[name] for name in names}
+def _import_prefixed(scope: Scope, prefix: str):
+    return {f"{prefix}.{k}": v for k, v in scope.values.items()}
 
 
-def _get_imported_members(module: Module, import_options: Value):
+def _import_cherrypick(scope: Scope, names: Iterable[str]):
+    return {name: scope.values[name] for name in names}
+
+
+def _get_imported_members(module: Module, scope: Scope, import_options: Value) -> Optional[Dict[str, Value]]:
     if import_options is Atom("all"):
-        return _import_all(module)
+        return _import_all(scope)
 
     elif import_options is Atom("qual"):
-        return _import_qualified(module, module.name)
+        return _import_qualified(scope, module.name)
 
     elif import_options is Atom("prefix"):
-        return _import_prefixed(module, module.name)
+        return _import_prefixed(scope, module.name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("as:"):
         new_name = import_options.value[len("as:"):]
-        return _import_qualified(module, new_name)
+        return _import_qualified(scope, new_name)
 
     elif import_options.tag == "atom" and import_options.value.startswith("prefix:"):
         prefix = import_options.value[len("prefix:"):]
-        return _import_prefixed(module, prefix)
+        return _import_prefixed(scope, prefix)
 
     elif import_options.tag == "vec" and all(x.tag == "atom" for x in import_options.values):
         names: List[str] = [x.value for x in import_options.values]
-        return _import_cherrypick(module, names)
+        return _import_cherrypick(scope, names)
 
     else:
         return None
@@ -534,12 +542,14 @@ def import_(state: State, fail: Fail):
     if module is None:
         fail(f"module {module_name} not found")
 
-    new_members = _get_imported_members(module, import_options)
+    scope, state_with_module = module.make_scope_with_existing_state(vm.generate_scope_id(), state)
+
+    new_members = _get_imported_members(module, scope, import_options)
 
     if new_members is None:
         fail(f"invalid import options: {import_options}")
 
-    return state.with_stack(rest).set_names(new_members)
+    return state_with_module.with_stack(rest).set_names(new_members)
 
 
 # </`import` implementation>

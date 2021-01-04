@@ -1,10 +1,10 @@
 from typing import TypeVar, Tuple
 from ..vm_utils import render_value_as_source
-from ..builtin_utils import Module, Fail, raw_function
+from ..builtin_utils import BuiltinModule, Fail, raw_function
 from ..types import CallByName, CallByValue, Put, State, Str, Value, Stack, Scope, Int
 import random
 
-module = Module("repl-utils")
+module = BuiltinModule("repl-utils")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 

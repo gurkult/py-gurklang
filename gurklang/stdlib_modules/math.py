@@ -1,11 +1,11 @@
 import math
 
 from typing import TypeVar, Tuple
-from ..builtin_utils import Module, Fail
+from ..builtin_utils import BuiltinModule, Fail
 from ..types import Value, Stack, Scope, Int, Vec, Atom
 
 
-module = Module("math")
+module = BuiltinModule("math")
 T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 

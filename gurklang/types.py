@@ -15,6 +15,7 @@ class Scope:
     parent: Optional[int]
     id: int
     values: Map
+    persistent: bool = False
 
     def get(self, name: str, state: "State") -> Value:
         if name in self.values:
@@ -158,13 +159,12 @@ class State:
             raise RuntimeError(f"Trying to kill nonexistent box with id {id}")
         return self._with_boxes(self.boxes.delete(id))
 
-    def make_scope(self, parent_id: int, new_id: int) -> "State":
+    def make_scope(self, parent_id: int, new_id: int, persistent: bool = False) -> "State":
         assert parent_id in self.scopes
         assert new_id not in self.scopes
-        new_scope = Scope(parent_id, new_id, Map())
+        new_scope = Scope(parent_id, new_id, Map(), persistent=persistent)
         return dataclass_replace(
-            self,
-            scopes=self.scopes.set(new_id, new_scope),
+            self.set_scope(new_id, new_scope),
             scope_stack=(new_id, self.scope_stack)
         )
 
@@ -182,6 +182,9 @@ class State:
     def look_up_name_in_current_scope(self, name: str) -> "Value":
         return self.get_by_name(self.current_scope_id, name)
 
+    def set_scope(self, id: int, scope: Scope) -> "State":
+        return dataclass_replace(self, scopes=self.scopes.set(id, scope))
+
     def set_name(self, name: str, value: "Value") -> "State":
         old_scope: Scope = self.scopes[self.current_scope_id]
         new_scope = old_scope.with_member(name, value)
@@ -193,20 +196,17 @@ class State:
     def forget_name(self, name: str) -> "State":
         old_scope: Scope = self.scopes[self.current_scope_id]
         new_scope = old_scope.without_member(name)
-        return dataclass_replace(
-            self,
-            scopes=self.scopes.set(self.current_scope_id, new_scope)
-        )
+        return self.set_scope(self.current_scope_id, new_scope)
 
     def set_names(self, update: Mapping[str, "Value"]) -> "State":
         old_scope: Scope = self.scopes[self.current_scope_id]
         new_scope = old_scope.with_members(update)
-        return dataclass_replace(
-            self,
-            scopes=self.scopes.set(self.current_scope_id, new_scope)
-        )
+        return self.set_scope(self.current_scope_id, new_scope)
 
-    def get_scope(self, scope_id: int) -> Optional[Scope]:
+    def get_scope(self, scope_id: int) -> Scope:
+        if scope_id not in self.scopes:
+            print(f"{scope_id=} {self.scopes=}")
+            raise KeyError(scope_id)
         return self.scopes[scope_id]
 
     def kill_scope(self, scope_id: int) -> "State":
