@@ -58,10 +58,10 @@ InfiniteStack = Tuple["Value",
 @dataclass(frozen=True)
 class State:
     stack: Stack
-    scopes: Map  # Map[int, Scope]
+    scopes: "Map[int, Scope]"
     scope_stack: ScopeStack
-    boxes: Map  # Map[int, Stack]
-    box_in_transaction: Map  # Map[int, bool]
+    boxes: "Map[int, Stack]"
+    box_in_transaction: "Map[int, bool]"
     last_box_id: int
 
     @staticmethod
