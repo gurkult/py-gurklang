@@ -1,10 +1,7 @@
 immutables
-pytest
 colorama
-hypothesis
-mkdocs
-mkdocs-material
-pymdown-extensions
-pygments
 click
+pytest
+hypothesis
+markdown
 -e git+https://github.com/decorator-factory/fnldoc.git#egg=fnldoc

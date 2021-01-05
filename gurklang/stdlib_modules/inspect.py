@@ -91,7 +91,7 @@ def dis(state: State, fail: Fail):
 
     last_id = 1
 
-    tasks: "deque[tuple[int, Sequence[Instruction]]]" = deque([(last_id, head.instructions)])
+    tasks: "deque[Tuple[int, Sequence[Instruction]]]" = deque([(last_id, head.instructions)])
     seen_code = {id(head.instructions): last_id}
 
     def get_code_id(instructions: Sequence[Instruction]):
