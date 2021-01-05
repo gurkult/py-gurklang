@@ -15,7 +15,7 @@ T, V, S = Tuple, Value, Stack
 Z = TypeVar("Z", bound=Stack)
 
 if TYPE_CHECKING:
-    ThreadQ = Queue[Tuple[int, Stack]]
+    ThreadQ = Queue[Tuple[int, Stack]]  # type: ignore
 else:
     ThreadQ = Queue
 
