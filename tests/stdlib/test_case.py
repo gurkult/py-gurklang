@@ -83,7 +83,7 @@ def test_case_tuple_match():
 
 
 def test_case_tuple_named_match():
-    assert run(''':math (*) import (sqr 10 10) 
+    assert run(''':math (+ *) import (sqr 10 10) 
                { ((:rect x y)) { x y * }
                  ((:sqr x y)) { x y + } 
                } case''') == number_stack(20)
