@@ -326,7 +326,7 @@ def _match_with_vec(pattern: Vec, value: Value, fail: Fail) -> Captures:
     for nested_pattern, nested_value in zip(reversed(pattern.values), reversed(value.values)):
         matches = _matches_impl(nested_pattern, nested_value, fail)
         if matches is None:
-            return [], {}
+            return None
         new_captures, new_vars = matches
         if variables.keys() & new_vars.keys():
             fail(f'duplicate variable name in pattern: {variables.keys() & new_vars.keys()!r}')
