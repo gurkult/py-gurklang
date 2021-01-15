@@ -256,6 +256,7 @@ def if_(stack: T[V, T[V, T[V, S]]], fail: Fail):
 
 
 # <`,` implementation>
+
 @make_simple()
 def __spread_vec(stack: T[V, S], fail: Fail):
     (fn, rest) = stack
@@ -287,6 +288,40 @@ module.add(
         flags=CodeFlags.PARENT_SCOPE,
         name=",",
         source_code="{ --spread-vec ! --collect-vec }"
+    )
+)
+
+
+@make_simple()
+def __spread_list(stack: T[V, S], fail: Fail):
+    (fn, rest) = stack
+    if fn.tag not in ["code", "native"]:
+        fail(f"{fn} is not a function")
+    sentinel = Atom("{] sentinel}")
+    instructions = [Put(sentinel), Put(fn), CallByValue()]
+    code = Code(instructions, closure=None, flags=CodeFlags.PARENT_SCOPE, name="--spreader")
+    return (code, rest)
+
+
+@make_simple()
+def __collect_list(stack: T[V, S], fail: Fail):
+    head, stack = stack  # type: ignore
+    sentinel = Atom("{] sentinel}")
+    rv = Vec(())
+    while head is not sentinel:
+        rv = Vec((head, rv))
+        head, stack = stack  # type: ignore
+    return (rv, stack)
+
+
+module.add(
+    "]",
+    Code(
+        [Put(__spread_list), CallByValue(), CallByValue(), Put(__collect_list), CallByValue()],
+        closure=None,
+        flags=CodeFlags.PARENT_SCOPE,
+        name="]",
+        source_code="{ --spread-list ! --collect-list }"
     )
 )
 
