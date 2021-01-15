@@ -33,7 +33,7 @@ env/bin/python -m pytest
 # Serve documentatiton
 
 ```bash
-env/bin/python -m mkdocs serve
+env/bin/python -m fnldoc serve fnldoc.json
 ```
 
 ---
