@@ -317,6 +317,9 @@ class Atom:
         _atom_cache[value] = rv
         return rv
 
+    def __hash__(self):
+        return hash(("atom", self.value))
+
     def __init__(self, value: str):
         self.value = value
 
@@ -361,6 +364,11 @@ class Vec:
     values: Sequence[Value]
     tag: ClassVar[Literal["vec"]] = "vec"
 
+    def __hash__(self):
+        # We'll promise that self.values will never be mutated
+        return hash(("vec", *self.values))
+
+
 @dataclass(frozen=True)
 class Code:
     """Code value like { :b def :a def b a }"""
@@ -372,6 +380,15 @@ class Code:
     introducer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
     finalizer: Optional[weakref.ReferenceType[Callable[[int], Any]]] = None
     tag: ClassVar[Literal["code"]] = "code"
+
+    def __hash__(self):
+        return hash((
+            *self.instructions,
+            self.closure,
+            self.flags,
+            self.name,
+            self.source_code,
+        ))
 
     def introduce(self):
         if self.introducer is not None and self.closure is not None:
