@@ -4,6 +4,7 @@
     "toc": {
         "Index": "index.fnl",
         "Tutorial": {
+            "Basics": "tutorial/00_basics.fnl",
             "Functions": "tutorial/01_functions.fnl",
             "Boxes": "tutorial/05_boxes.fnl"
         }
