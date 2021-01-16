@@ -39,7 +39,14 @@ enter `55` into the interactive shell
 (p
 "
 it may seem like nothing happened, but this added the first value to the stack. The integer 55.
-entering peek shows the current values on the stack. Lets put more numbers on and try it out
+entering peek shows the current values on the stack. ")
+(gurklang
+"""
+>>> peek
+(55 ())
+""")
+(p
+"Lets put more numbers on and see what it does
 "
 (gurklang
 """
@@ -53,7 +60,7 @@ entering peek shows the current values on the stack. Lets put more numbers on an
 (md "
 we can see that we have the numbers on the stack.
 The topmost value of the stack is in the outermost parentheses. As we added -9 last, it is on top.
-Lets say we want to remove the top value. For that we use the function `drop`.
+Lets say we want to remove the top value. For that we use `drop`.
 ")
 (gurklang
 """
@@ -61,10 +68,12 @@ Lets say we want to remove the top value. For that we use the function `drop`.
 >>> peek
 (0 (11 (44 (55 ()))))
 """)
+(p "drop, peek, and other things you enter into the interactive shell, are called functions.
+Functions affect the stack in some way, and even numbers can be considered functions")
 (p "You can also call multiple functions on the same line like so")
 (gurklang
 """
->>> drop drop 10 11 peek
+>>> drop drop 10 11   peek
 (11 (10 (44 (55 ()))))
 """)
 ((h 2) "Reading from the stack")
@@ -152,14 +161,13 @@ nip   ( a b - b )
 tuck  ( a b - b a b )
 """)
 
-(p "what will")
+(p "what will this result in")
 
 (gurklang
 """
 1 2 3 4 rot + swap / swap dup + - println
 """)
 
-(p "result in")
 (adm &answer (tt "0"))
 ((h 2) "Other types of values on the stack")
 
