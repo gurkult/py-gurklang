@@ -13,7 +13,7 @@ def make_stream(s: str, i: int = 0):
         if i < len(s):
             return Str(s[i]), (make_stream(s, i + 1), stack)
         else:
-            return Atom.make('stream-end'), (make_stream(s, i), stack)
+            return Atom('stream-end'), (__str_stream, stack)
 
     return __str_stream
 
@@ -21,6 +21,6 @@ def make_stream(s: str, i: int = 0):
 @module.register_simple('str->stream')
 def str_to_stream(stack: T[V, S], fail: Fail):
     s, r = stack
-    if s.tag == 'str':
-        return make_stream(s.value), r
-    fail(f'{s} is not a string')
+    if s.tag != 'str':
+        fail(f'{s} is not a string')
+    return make_stream(s.value), r
