@@ -44,8 +44,6 @@ def _register_delegated_methods():
                 fail('argument is not a string')
             return Atom.bool(method(arg.value)), rest
 
-        module.register_simple(name)(fun)
-
 
 _register_delegated_methods()
 
