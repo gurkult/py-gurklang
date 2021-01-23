@@ -25,22 +25,24 @@ def _register_delegated_methods():
     for function, name in _UNARY_STRING_TO_STRING:
         method = getattr(str, function)
 
+        #  closures capture by name, so not passing method as a default argument would only use the last method
+        @module.register_simple(name)
         def fun(stack: T[V, S], fail: Fail, method=method):
             arg, rest = stack
             if arg.tag != 'str':
                 fail('argument is not a string')
             return Str(method(arg.value)), rest
 
-        module.register_simple(name)(fun)
-
     for function, name in _UNARY_STRING_TO_BOOL:
         method = getattr(str, function)
 
+        #  closures capture by name, so not passing method as a default argument would only use the last method
+        @module.register_simple(name)
         def fun(stack: T[V, S], fail: Fail, method=method):
             arg, rest = stack
             if arg.tag != 'str':
                 fail('argument is not a string')
-            return Atom('true') if method(arg.value) else Atom('false'), rest
+            return Atom.bool(method(arg.value)), rest
 
         module.register_simple(name)(fun)
 
