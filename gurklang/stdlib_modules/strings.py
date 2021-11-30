@@ -15,6 +15,7 @@ _UNARY_STRING_TO_STRING = [
     ('upper', '->upper'),
     ('swapcase', 'swap-case'),
     ('title', '->title'),
+    ('strip', 'strip'),
 ]
 _UNARY_STRING_TO_BOOL = [
     ('is' + w, w + '?')
