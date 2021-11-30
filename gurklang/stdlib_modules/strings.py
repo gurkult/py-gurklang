@@ -1,7 +1,8 @@
+from functools import reduce
 from typing import TypeVar, Tuple
 
 from ..builtin_utils import BuiltinModule, Fail, make_function, raw_function, make_simple
-from ..types import CallByValue, Put, State, Str, Value, Stack, Int, Atom
+from ..types import CallByValue, Put, State, Str, Value, Stack, Int, Atom, Vec
 from ..vm_utils import render_value_as_source
 
 module = BuiltinModule("strings")
@@ -68,6 +69,26 @@ def join_list(stack: T[V, T[V, S]], fail: Fail):
         strings.append(car.value)
         el = cdr.values
     return Str(sep.value.join(strings)), rest
+
+
+@module.register_simple()
+def split(stack: T[V, T[V, S]], fail: Fail):
+    sep, (string, rest) = stack
+    if sep.tag != 'str':
+        fail('join requires a string as a separator')
+    if string.tag != 'str':
+        fail('join requires a string to split')
+    flat = [Str(s) for s in string.value.split(sep.value)]
+    nested = reduce(lambda a, b: Vec([b, a]), reversed(flat), Vec([]))
+    return nested, rest
+
+
+@module.register_simple()
+def replace(stack: T[V, T[V, T[V, S]]], fail: Fail):
+    new, (old, (s, rest)) = stack
+    if s.tag != "str" or old.tag != "str" or new.tag != "str":
+        fail(f"{render_value_as_source(s)}, {render_value_as_source(old)} and {render_value_as_source(new)} must be strings")
+    return Str(s.value.replace(old.value, new.value)), rest
 
 
 @make_simple()
