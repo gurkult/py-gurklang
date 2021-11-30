@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, TextIO
 from ..builtin_utils import BuiltinModule, Fail, make_simple
 from ..types import Atom, Str, Value, Stack, Tuple
 from pathlib import Path
@@ -18,10 +18,14 @@ def read(stack: T[V, S], fail: Fail):
     fail("read works on the :in atom and a filepath string")
 
     
-def lines_as_stream(file: Iterable[str]):
+def lines_as_stream(file: TextIO):
     @make_simple()
     def __file_stream(stack: S, fail: Fail):
-        return next(map(Str, file), Atom("stream-end")), (__file_stream, stack)
+        try:
+            return Str(next(file)), (__file_stream, stack)
+        except (StopIteration, ValueError):
+            file.close()
+            return Atom("stream-end"), (__file_stream , stack)
 
     return __file_stream
 
