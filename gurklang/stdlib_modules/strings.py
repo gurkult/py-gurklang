@@ -144,3 +144,14 @@ foreach_str = raw_function(
 )
 module.add("foreach-str", foreach_str)
 module.add("∀s", foreach_str)
+
+
+@module.register_simple('str->int')
+def parse_int(stack: T[V, S], fail:Fail):
+    v, rest = stack
+    if v.tag != 'str':
+        fail("str->int requires a string")
+    try:
+        return Int(int(v.value)), rest
+    except ValueError:
+        return Atom('no-int'), rest
