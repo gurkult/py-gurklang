@@ -151,4 +151,7 @@ def parse_int(stack: T[V, S], fail:Fail):
     v, rest = stack
     if v.tag != 'str':
         fail("str->int requires a string")
-    return Int(int(v.value)), rest
+    try:
+        return Int(int(v.value)), rest
+    except ValueError:
+        return Atom('no-int'), rest
