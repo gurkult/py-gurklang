@@ -5,7 +5,7 @@ here = Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
-    name='py-gurklang',
+    name='gurklang',
     version='0.0.1',
     description='a python runtime for gurklang',
     long_description=long_description,
