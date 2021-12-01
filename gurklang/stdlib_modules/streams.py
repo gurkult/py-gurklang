@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 
 from ..builtin_utils import BuiltinModule, Fail, make_simple
 from ..types import Value, Stack, Str, Atom, Vec
@@ -18,13 +18,17 @@ def make_str_stream(s: str, i: int = 0):
     return __str_stream
 
 
-def make_tuple_stream(s: Vec, i: int = 0):
+def make_tuple_stream(s: List[Vec]):
     @make_simple()
     def __tuple_stream(stack: S, fail: Fail):
-        if i < len(s):
-            return s[i], (make_tuple_stream(s, i + 1), stack)
-        else:
+        if s == []:
             return Atom('stream-end'), (__tuple_stream, stack)
+        if len(s) != 2:
+            fail('a list must be composed of 2 long tuples')
+        head, tail = s
+        if tail.tag != 'vec':
+            fail('a list must only contain tuples as the second element')
+        return head, (make_tuple_stream(tail.values), stack)
 
     return __tuple_stream
 
@@ -42,4 +46,4 @@ def tuple_to_stream(stack: T[V, S], fail: Fail):
     s, r = stack
     if s.tag != 'vec':
         fail(f'{s} is not a tuple')
-    return make_tuple_stream(s.values), r 
+    return make_tuple_stream(s.values), r
